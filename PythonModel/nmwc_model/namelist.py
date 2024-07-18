@@ -14,7 +14,7 @@ out_fname = "output_test"  # file name of output
 iout = 360  # write every iout-th time-step into the output file
 iiniout = 1  # write initial field (0 = no, 1 = yes)
 # Domain size
-#hoi
+#hoi2   zggvgzvgzvgz
 # -------------------------------------------------
 xl = 500000.0  # domain size  [m]
 nx = 100  # number of grid points in horizontal direction
