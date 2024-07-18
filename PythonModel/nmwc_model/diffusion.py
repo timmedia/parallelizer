@@ -1,6 +1,6 @@
 import numpy as np
 
-from namelist import (
+from nmwc_model.namelist import (
     idbg,
     nb,
     nx,

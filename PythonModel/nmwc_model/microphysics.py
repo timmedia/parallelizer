@@ -2,7 +2,7 @@ import numpy as np
 
 from nmwc_model.diagnostics import diag_density_and_temperature
 from nmwc_model.meteo_utilities import eswat1
-from namelist import (
+from nmwc_model.namelist import (
     nz,
     nxb,
     dt,

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from namelist import idbg, nz, g, dth, cp, pref, rdcp  # global variables
+from nmwc_model.namelist import idbg, nz, g, dth, cp, pref, rdcp  # global variables
 
 
 def diag_montgomery(prs, mtg, th0, topo, topofact):

@@ -48,7 +48,7 @@ from nmwc_model.output import makeoutput, write_output
 from nmwc_model.microphysics import kessler, seifert
 
 # import global namelist variables
-from namelist import (
+from nmwc_model.namelist import (
     imoist,
     imicrophys,
     irelax,
