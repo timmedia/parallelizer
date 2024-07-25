@@ -10,7 +10,7 @@ and all subfunctions.
 
 # Output control
 # -------------------------------------------------
-out_fname = "output_test"  # file name of output
+out_fname = "unew_before_snew"  # file name of output
 iout = 360  # write every iout-th time-step into the output file
 iiniout = 1  # write initial field (0 = no, 1 = yes)
 #hoi

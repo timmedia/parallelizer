@@ -35,7 +35,7 @@ import matplotlib.widgets as widgets
 import matplotlib.gridspec as gridspec
 from matplotlib.animation import FuncAnimation
 
-from nmwc_model.readsim import readsim
+from readsim import readsim
 
 
 def arg_parser():

@@ -9,7 +9,7 @@ from namelist import (
     imicrophys,
     irelax,
 )  # import global variables
-from nmwc_model.boundary import periodic
+from boundary import periodic
 
 
 def horizontal_diffusion(
