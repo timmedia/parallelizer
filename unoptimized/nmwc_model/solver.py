@@ -675,7 +675,6 @@ if __name__ == "__main__":
                 ncnew[ncnew < 0] = 0
                 nrnew[nrnew < 0] = 0
 
-
             #
             # *** Exercise 4.1 Moisture ***
 
