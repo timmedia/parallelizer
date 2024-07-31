@@ -14,7 +14,6 @@ out_fname = "output_test"  # file name of output
 iout = 360  # write every iout-th time-step into the output file
 iiniout = 1  # write initial field (0 = no, 1 = yes)
 # Domain size
-#hoi2   zggvgzvgzvgz
 # -------------------------------------------------
 xl = 500000.0  # domain size  [m]
 nx = 100  # number of grid points in horizontal direction
@@ -38,7 +37,7 @@ u00 = 22.5  # initial velocity [m/s]
 bv00 = 0.015  # Brunt-Vaisalla frequency [1/s]
 th00 = 280.0  # potential temperature at surface
 
-ishear = 0  # wind shear simulation (0 = no shear, 1 = shear)
+ishear = 1  # wind shear simulation (0 = no shear, 1 = shear)
 k_shl = 27  # bottom level of wind shear layer (ishear = 1)
 # bottom level of wind layer is 0 (index)
 k_sht = 37  # top level of wind shear layer (ishear = 1)
@@ -65,8 +64,8 @@ itime = 1  # print computation time (0 = not print, 1 = print)
 imoist = 1  # include moisture (0 = dry, 1 = moist)
 imoist_diff = 1  # apply diffusion to qv, qc, qr (0 = off, 1 = on)
 imicrophys = 1  # include microphysics (0 = off, 1 = kessler, 2 = two moment)
-idthdt = 0  # couple physics to dynamics (0 = off, 1 = on)
-iern = 0  # evaporation of rain droplets (0 = off, 1 = on)
+idthdt = 1  # couple physics to dynamics (0 = off, 1 = on)
+iern = 1  # evaporation of rain droplets (0 = off, 1 = on)
 
 # Options for Kessler scheme
 # -------------------------------------------------

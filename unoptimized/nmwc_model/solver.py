@@ -77,7 +77,6 @@ from nmwc_model.namelist import (
     itime,
 )
 
-u_gianni = np.arange(1)
 if __name__ == "__main__":
     # Print the full precision
     # DL: REMOVE FOR STUDENT VERSION
@@ -806,12 +805,10 @@ if __name__ == "__main__":
         if iprtcfl == 1:
             u_max = np.amax(np.abs(unow))
             cfl_max = u_max * dtdx
-            u_gianni = np.append(u_gianni,u_max)
             print("============================================================\n")
             print("CFL MAX: %g U MAX: %g m/s \n" % (cfl_max, u_max))
             if cfl_max > 1:
                 print("!!! WARNING: CFL larger than 1 !!!\n")
-                test_von_gianni = u_gianni
             elif np.isnan(cfl_max):
                 print("!!! MODEL ABORT: NaN values !!!\n")
             print("============================================================\n")
