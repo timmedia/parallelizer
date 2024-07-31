@@ -10,9 +10,10 @@ and all subfunctions.
 
 # Output control
 # -------------------------------------------------
-out_fname = "output_test"  # file name of output
+out_fname = "output_ex2"  # file name of output
 iout = 360  # write every iout-th time-step into the output file
 iiniout = 1  # write initial field (0 = no, 1 = yes)
+
 # Domain size
 # -------------------------------------------------
 xl = 500000.0  # domain size  [m]
@@ -22,35 +23,33 @@ thl = 150.0  # domain depth  [K]
 nz = 60  # vertical resolution
 dt = 10  # time step [s]
 diff = 0.02  # (horizontal) diffusion coefficient
-time = 1 * 60 * 60  # integration time [s]
-
+time = 6 * 60 * 60  # integration time [s]
 
 # Topography
 # -------------------------------------------------
-topomx = 1000  # mountain height [m]
+topomx = 500  # mountain height [m]
 topowd = 50000  # mountain half width [m]
-topotim = 1800 # mountain growth time [s]
+topotim = 1800  # mountain growth time [s]
 
 # Initial atmosphere
 # -------------------------------------------------
 u00 = 22.5  # initial velocity [m/s]
 bv00 = 0.015  # Brunt-Vaisalla frequency [1/s]
-th00 = 280.0  # potential temperature at surface
+th00 = 300.0  # potential temperature at surface
 
-ishear = 1  # wind shear simulation (0 = no shear, 1 = shear)
-k_shl = 27  # bottom level of wind shear layer (ishear = 1)
+ishear = 0  # wind shear simulation (0 = no shear, 1 = shear)
+k_shl = 5  # bottom level of wind shear layer (ishear = 1)
 # bottom level of wind layer is 0 (index)
-k_sht = 37  # top level of wind shear layer (ishear = 1)
+k_sht = 8  # top level of wind shear layer (ishear = 1)
 # top level of wind layer is nz-1 (index)
 u00_sh = 10.0  # initial velocity below shear layer [m/s] (ishear = 1)
 # u00 is speed above shear layer [m/s]   #orig 0.
 
 # Boundaries
 # -------------------------------------------------
-nab = 30  # number of grid points in absorber
+nab = 0  # number of grid points in absorber
 diffabs = 1.0  # maximum value of absorber
-irelax = 1  # lateral boundaries (0 = periodic, 1 = relax)
-
+irelax = 0  # lateral boundaries (0 = periodic, 1 = relax)
 nb = 2  # number of boundary points on each side
 
 # Print options
@@ -61,11 +60,11 @@ itime = 1  # print computation time (0 = not print, 1 = print)
 
 # Physics: Moisture
 # -------------------------------------------------
-imoist = 1  # include moisture (0 = dry, 1 = moist)
-imoist_diff = 1  # apply diffusion to qv, qc, qr (0 = off, 1 = on)
-imicrophys = 1  # include microphysics (0 = off, 1 = kessler, 2 = two moment)
-idthdt = 1  # couple physics to dynamics (0 = off, 1 = on)
-iern = 1  # evaporation of rain droplets (0 = off, 1 = on)
+imoist = 0  # include moisture (0 = dry, 1 = moist)
+imoist_diff = 0  # apply diffusion to qv, qc, qr (0 = off, 1 = on)
+imicrophys = 0  # include microphysics (0 = off, 1 = kessler, 2 = two moment)
+idthdt = 0  # couple physics to dynamics (0 = off, 1 = on)
+iern = 0  # evaporation of rain droplets (0 = off, 1 = on)
 
 # Options for Kessler scheme
 # -------------------------------------------------

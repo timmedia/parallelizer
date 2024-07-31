@@ -77,6 +77,7 @@ from nmwc_model.namelist import (
     itime,
 )
 
+
 if __name__ == "__main__":
     # Print the full precision
     # DL: REMOVE FOR STUDENT VERSION
@@ -370,7 +371,6 @@ if __name__ == "__main__":
     # *** Exercise 3.1 height-dependent diffusion coefficient ***
     # *** edit here ***
 
-
     k = np.arange(nz)
     tau = diff + (diffabs -diff)*np.sin(np.pi/2*(k-nz+nab-1)/nab)**2
     tau[0:nz-nab] = diff
@@ -549,18 +549,7 @@ if __name__ == "__main__":
         #
 
         # *** edit here ***
-        # print("mtg:  ", mtg[5,5])
-        # print("exn:  ", exn[5,5])
-        # print("prs:  ", prs[5,5])
-        # print("uold: ", uold[5,5])
-        # print("unow: ", unow[5,5])
-        # print("unew: ", unew[5,5])
-        # print("sold: ", sold[5,5])
-        # print("snow: ", snow[5,5])
-        # print("snew: ", snew[5,5])
-        # print()
 
-        
         snew = prog_isendens(sold, snow, unow, dtdx, dthetadt = dthetadt)
         #
         # *** Exercise 2.1 isentropic mass density ***
@@ -589,16 +578,6 @@ if __name__ == "__main__":
         unew = prog_velocity(uold, unow, mtg, dtdx, dthetadt = dthetadt)
         #
         # *** Exercise 2.1 velocity ***
-        # print("mtg:  ", mtg[5,5])
-        # print("exn:  ", exn[5,5])
-        # print("prs:  ", prs[5,5])
-        # print("uold: ", uold[5,5])
-        # print("unow: ", unow[5,5])
-        # print("unew: ", unew[5,5])
-        # print("sold: ", sold[5,5])
-        # print("snow: ", snow[5,5])
-        # print("snew: ", snew[5,5])
-        # print()
 
         # exchange boundaries if periodic
         # -------------------------------------------------------------------------
@@ -688,7 +667,6 @@ if __name__ == "__main__":
 
             if idbg == 1:
                 print("Implement moisture clipping")
-
             qvnew[qvnew < 0] = 0
             qcnew[qcnew < 0] = 0
             qrnew[qrnew < 0] = 0
@@ -696,12 +674,6 @@ if __name__ == "__main__":
             if imicrophys == 2: 
                 ncnew[ncnew < 0] = 0
                 nrnew[nrnew < 0] = 0
-
-            
-
-
-
-
 
 
             #
@@ -762,11 +734,6 @@ if __name__ == "__main__":
         # *** exchange isentropic mass density and velocity ***
         # *** (later also qv,qc,qr,nc,nr) ***
         # *** edit here ***
-        #
-        # print("uold: ",uold[1,1])
-        # print("unow: ",unow[1,1])
-        # print("unew: ",unew[1,1])
-        # print()
         if imicrophys == 2:
             ncold = ncnow
             ncnow = ncnew
