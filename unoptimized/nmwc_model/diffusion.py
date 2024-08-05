@@ -1,6 +1,6 @@
 import numpy as np
 
-from nmwc_model.namelist import (
+from namelist import (
     idbg,
     nb,
     nx,
@@ -9,7 +9,7 @@ from nmwc_model.namelist import (
     imicrophys,
     irelax,
 )  # import global variables
-from nmwc_model.boundary import periodic
+from boundary import periodic
 
 
 def horizontal_diffusion(

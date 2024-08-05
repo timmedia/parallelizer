@@ -34,21 +34,21 @@ from time import time as tm  # Benchmarking tools
 import sys
 
 # import model functions
-from nmwc_model.makesetup import maketopo, makeprofile
-from nmwc_model.boundary import periodic, relax
-from nmwc_model.prognostics import (
+from makesetup import maketopo, makeprofile
+from boundary import periodic, relax
+from prognostics import (
     prog_isendens,
     prog_velocity,
     prog_moisture,
     prog_numdens,
 )
-from nmwc_model.diagnostics import diag_montgomery, diag_pressure, diag_height
-from nmwc_model.diffusion import horizontal_diffusion
-from nmwc_model.output import makeoutput, write_output
-from nmwc_model.microphysics import kessler, seifert
+from diagnostics import diag_montgomery, diag_pressure, diag_height
+from diffusion import horizontal_diffusion
+from output import makeoutput, write_output
+from microphysics import kessler, seifert
 
 # import global namelist variables
-from nmwc_model.namelist import (
+from namelist import (
     imoist,
     imicrophys,
     irelax,
@@ -740,15 +740,6 @@ if __name__ == "__main__":
             nrold = nrnow
             nrnow = nrnew
 
-        qvold = qvnow
-        qvnow = qvnew
-
-        qcold = qcnow
-        qcnow = qcnew
-
-        qrold = qrnow
-        qrnow = qrnew
-
         sold = snow
         snow = snew
 
@@ -758,6 +749,15 @@ if __name__ == "__main__":
         if imoist == 1:
             if idbg == 1:
                 print("exchange moisture variables")
+                    
+            qvold = qvnow
+            qvnow = qvnew
+
+            qcold = qcnow
+            qcnow = qcnew
+
+            qrold = qrnow
+            qrnow = qrnew
 
             if imicrophys == 2:
                 if idbg == 1:

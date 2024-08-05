@@ -1,8 +1,8 @@
 import numpy as np
 
-from nmwc_model.diagnostics import diag_density_and_temperature
-from nmwc_model.meteo_utilities import eswat1
-from nmwc_model.namelist import (
+from diagnostics import diag_density_and_temperature
+from meteo_utilities import eswat1
+from namelist import (
     nz,
     nxb,
     dt,

@@ -10,20 +10,20 @@ and all subfunctions.
 
 # Output control
 # -------------------------------------------------
-out_fname = "output_ex2"  # file name of output
-iout = 360  # write every iout-th time-step into the output file
+out_fname = "mountain4"  # file name of output
+iout = 1  # write every iout-th time-step into the output file
 iiniout = 1  # write initial field (0 = no, 1 = yes)
 
 # Domain size
 # -------------------------------------------------
-xl = 500000.0  # domain size  [m]
-nx = 100  # number of grid points in horizontal direction
+xl = 5000000.0  # domain size  [m]
+nx = 50000  # number of grid points in horizontal direction
 dx = xl / nx  # horizontal resolution [m]
 thl = 150.0  # domain depth  [K]
 nz = 60  # vertical resolution
-dt = 10  # time step [s]
+dt = 1  # time step [s]
 diff = 0.02  # (horizontal) diffusion coefficient
-time = 6 * 60 * 60  # integration time [s]
+time = dt # integration time [s]
 
 # Topography
 # -------------------------------------------------
@@ -65,7 +65,7 @@ imoist = 1  # include moisture (0 = dry, 1 = moist)
 imoist_diff = 1  # apply diffusion to qv, qc, qr (0 = off, 1 = on)
 imicrophys = 1  # include microphysics (0 = off, 1 = kessler, 2 = two moment)
 idthdt = 0  # couple physics to dynamics (0 = off, 1 = on)
-iern = 0  # evaporation of rain droplets (0 = off, 1 = on)
+iern = 1  # evaporation of rain droplets (0 = off, 1 = on)
 
 # Options for Kessler scheme
 # -------------------------------------------------
