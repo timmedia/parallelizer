@@ -740,15 +740,6 @@ if __name__ == "__main__":
             nrold = nrnow
             nrnow = nrnew
 
-        qvold = qvnow
-        qvnow = qvnew
-
-        qcold = qcnow
-        qcnow = qcnew
-
-        qrold = qrnow
-        qrnow = qrnew
-
         sold = snow
         snow = snew
 
@@ -756,6 +747,14 @@ if __name__ == "__main__":
         unow = unew
 
         if imoist == 1:
+            qvold = qvnow
+            qvnow = qvnew
+
+            qcold = qcnow
+            qcnow = qcnew
+
+            qrold = qrnow
+            qrnow = qrnew
             if idbg == 1:
                 print("exchange moisture variables")
 

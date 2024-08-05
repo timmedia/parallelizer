@@ -17,11 +17,11 @@ iiniout = 1  # write initial field (0 = no, 1 = yes)
 # Domain size
 # -------------------------------------------------
 xl = 500000.0  # domain size  [m]
-nx = 100  # number of grid points in horizontal direction
+nx = 200  # number of grid points in horizontal direction
 dx = xl / nx  # horizontal resolution [m]
-thl = 150.0  # domain depth  [K]
+thl = 350.0  # domain depth  [K]
 nz = 60  # vertical resolution
-dt = 10  # time step [s]
+dt = 5  # time step [s]
 diff = 0.02  # (horizontal) diffusion coefficient
 time = 6 * 60 * 60  # integration time [s]
 
