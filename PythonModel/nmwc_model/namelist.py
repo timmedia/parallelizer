@@ -11,25 +11,26 @@ and all subfunctions.
 # Output control
 # -------------------------------------------------
 out_fname = "output_test"  # file name of output
-iout = 360  # write every iout-th time-step into the output file
+iout = 1  # write every iout-th time-step into the output file
 iiniout = 1  # write initial field (0 = no, 1 = yes)
 # Domain size
 #hoi2   zggvgzvgzvgz
 # -------------------------------------------------
-xl = 500000.0  # domain size  [m]
-nx = 100  # number of grid points in horizontal direction
+xl = 5000000.0  # domain size  [m]
+nx = 1000  # number of grid points in horizontal direction
 dx = xl / nx  # horizontal resolution [m]
-thl = 150.0  # domain depth  [K]
-nz = 60  # vertical resolution
+thl = 150.0*3  # domain depth  [K]
+nz = 60*3  # vertical resolution
 dt = 10  # time step [s]
 diff = 0.02  # (horizontal) diffusion coefficient
-time = 1 * 60 * 60  # integration time [s]
+time = dt  # integration time [s]
+
 
 
 # Topography
 # -------------------------------------------------
-topomx = 1000  # mountain height [m]
-topowd = 50000  # mountain half width [m]
+topomx = 3000  # mountain height [m]
+topowd = 500000  # mountain half width [m]
 topotim = 1800 # mountain growth time [s]
 
 # Initial atmosphere
@@ -64,8 +65,8 @@ itime = 1  # print computation time (0 = not print, 1 = print)
 # -------------------------------------------------
 imoist = 1  # include moisture (0 = dry, 1 = moist)
 imoist_diff = 1  # apply diffusion to qv, qc, qr (0 = off, 1 = on)
-imicrophys = 1  # include microphysics (0 = off, 1 = kessler, 2 = two moment)
-idthdt = 0  # couple physics to dynamics (0 = off, 1 = on)
+imicrophys = 2  # include microphysics (0 = off, 1 = kessler, 2 = two moment)
+idthdt = 1  # couple physics to dynamics (0 = off, 1 = on)
 iern = 0  # evaporation of rain droplets (0 = off, 1 = on)
 
 # Options for Kessler scheme

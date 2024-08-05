@@ -515,6 +515,15 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------------
     # Loop over all time steps
     # ----------------------------------------------------------------------------
+    from inspect import currentframe, getframeinfo
+
+    
+    def gprint(x):
+        m = getframeinfo(currentframe().f_back)[3][0].replace(" ","").replace("(","").replace(")","").replace("gprint","")
+        print("################################")
+        print(m,x)
+        print("################################")
+    
     if idbg == 1:
         print("Starting time loop ...\n")
 
@@ -531,7 +540,6 @@ if __name__ == "__main__":
 
         # initially increase height of topography only slowly
         topofact = min(1.0, float(time) / topotim)
-
         # Special treatment of first time step
         # -------------------------------------------------------------------------
         if its == 1:
@@ -561,7 +569,24 @@ if __name__ == "__main__":
         # print("snew: ", snew[5,5])
         # print()
 
+
+        ### 4444 hier können wir splitten und paralelisieren:
+        ### 4444: splitten: sold, snow, sold, snow, dthetadt, mtg, prs, topo(evt kann man das auch global machen), zhtold,zhtnow,prec,tot_prec
+        ### 4444: splitten falls imoist: qvold, qcold, qrold,qvnow, qcnow, qrnow
+        ### 4444: splitten falls imoit + imycrophs + dthdt: dthetadt(sonst könntne wir es global machen)
+        ### 4444: splitten falls twomoment:ncold, nrold, ncnow, nrnow
+        ### 4444: global: (alles was hier aus namelist importiert wird), dtdx,tau,prs0, th0, topofact,dt
+
+
+
+
+        ### 3333 ich habe die grundsätzliche frage ob es sin machen würde die imports am andfang der funktionen, nicht zu machen sondern alles an die funktionen zu übergeben
+        ### 3333 sold, snow             (nx + nb*2, nz)         split
+        ### 3333 sold, snow             (nx + nb*2 + 1, nz)     split
+        ### 3333 dtdx                   float                   global
+        ### 3333 dthetadt               (nx + nb*2, nz + 1)     split
         
+
         snew = prog_isendens(sold, snow, unow, dtdx, dthetadt = dthetadt)
         #
         # *** Exercise 2.1 isentropic mass density ***
@@ -570,6 +595,9 @@ if __name__ == "__main__":
         # *** time step for moisture scalars ***
         # *** edit here ***
         #
+        ### 3333 qvold, qcold, qrold            (nx + nb*2, nz)         split
+        ### 3333 qvnow, qcnow, qrnow            (nx + nb*2, nz)         split
+        ### 3333 ncold, nrold, ncnow, nrnow     (nx + nb*2, nz)         split only for twomoment
 
         if imoist == 1:
             if idbg == 1:
@@ -587,6 +615,8 @@ if __name__ == "__main__":
         #
 
         # *** edit here ***
+
+        ### 3333 mtg            (nx + nb*2, nz)         split
         unew = prog_velocity(uold, unow, mtg, dtdx, dthetadt = dthetadt)
         #
         # *** Exercise 2.1 velocity ***
@@ -603,6 +633,8 @@ if __name__ == "__main__":
 
         # exchange boundaries if periodic
         # -------------------------------------------------------------------------
+        ### 3333 an den schluss verschieben oder tatsächlich die beiden rand threads, diesen austausch machen lassen
+        ### 3333 sicher vor diffusion machen
         if irelax == 0:
             snew = periodic(snew, nx, nb)
             unew = periodic(unew, nx, nb)
@@ -616,7 +648,9 @@ if __name__ == "__main__":
             if imoist == 1 and imicrophys == 2:
                 ncnew = periodic(ncnew, nx, nb)
                 nrnew = periodic(nrnew, nx, nb)
-
+        
+        
+        ### 3333 adas muss explizit für die threads die die randpunkte berechnen angepasst werden, die anderen brauchen es nicht
         # relaxation of prognostic fields
         # -------------------------------------------------------------------------
         if irelax == 1:
@@ -637,7 +671,9 @@ if __name__ == "__main__":
 
         # Diffusion and gravity wave absorber
         # ------------------------------------
-
+        ### 3333 tau            (, nz)         global
+        ###3333 das sollten wir an den schluss verschieben, sollte ghen ändert das resultat aber schon, ist aber nicht weniger richtig
+        ### alternative idee, ein trhead ist abgestellt um nur die randpunkte zu berechnen, es wartet hier auf den send und rechneta dann immer gleich
         if imoist == 0:
             [unew, snew] = horizontal_diffusion(tau, unew, snew)
         else:
@@ -662,6 +698,10 @@ if __name__ == "__main__":
         #
 
         # *** edit here ***
+
+        ### 3333 prs0           (nz+1)                    global
+        ### 3333 prs            (nx + nb*2, nz+1)         split
+
         prs = diag_pressure(prs0, prs, snew)
         #
         # *** Exercise 2.2 Diagnostic computation of pressure ***
@@ -669,6 +709,9 @@ if __name__ == "__main__":
         # *** Exercise 2.2 Diagnostic computation of Montgomery ***
         # *** Calculate Exner function and Montgomery potential ***
         #
+        ### 3333 th0             (nz+1)         global
+        ### 3333 topo            (nx + nb*2, 1)            split, evt global (bleibt immer gleich)
+        ### 3333 topofact        float                     global
 
         # *** edit here ***
         exn, mtg = diag_montgomery(prs, mtg, th0, topo, topofact)
@@ -678,15 +721,18 @@ if __name__ == "__main__":
         # Calculation of geometric height (staggered)
         # needed for output and microphysics schemes
         # ---------------------------------
+        ### 3333 zhtold,zhtnow            (nx + nb*2, nz+1)         split
+        ### 3333 exn                      (nx + nb*2, nz+1)         split
         zhtold[...] = zhtnow[...]
         zhtnow = diag_height(prs, exn, zhtnow, th0, topo, topofact)
 
+
+        ### evt nach unten verschieben, falls wir das erst nach der diffusion machen wollen
         if imoist == 1:
             # *** Exercise 4.1 Moisture ***
             # *** Clipping of negative values ***
             # *** edit here ***
             #
-
             if idbg == 1:
                 print("Implement moisture clipping")
 
@@ -713,11 +759,11 @@ if __name__ == "__main__":
             # *** Kessler scheme ***
             # *** edit here ***
             #
-
+            ### 3333 prec,tot_prec            (nx + nb*2, )         split
             if idbg == 1:
                 print("Add function call to Kessler microphysics")
             [lheat,qvnew,qcnew,qrnew,prec,prec_tot] = kessler(snew, qvnew, qcnew, qrnew, prs, exn, zhtnow, th0, prec, tot_prec)
-
+            
             #
             # *** Exercise 4.2 Kessler ***
         elif imoist == 1 and imicrophys == 2:
@@ -725,7 +771,7 @@ if __name__ == "__main__":
             # *** Two Moment Scheme ***
             # *** edit here ***
             #
-
+            ### 3333 dthetadt            (nx + nb*2, nz+1)         split falls twomoment, oder vert veloc
             if idbg == 1:
                 print("Add function call to two moment microphysics")
             [lheat,qvnew,qcnew,qrnew,tot_prec,prec,ncnew,nrnew] = seifert(unew,th0,prs,snew,qvnew,qcnew,qrnew,exn,zhtold,zhtnow,tot_prec,prec,ncnew,nrnew,dthetadt)
@@ -734,6 +780,8 @@ if __name__ == "__main__":
 
         if imoist == 1 and imicrophys > 0:
             if idthdt == 1:
+                ### 3333 lheat               (nx + nb*2, nz)         split
+                ### 3333 dt                  int                     global
                 # Stagger lheat to model levels and compute tendency
                 k = np.arange(1, nz)
                 if imicrophys == 1:
@@ -747,6 +795,7 @@ if __name__ == "__main__":
 
                 # periodic lateral boundary conditions
                 # ----------------------------
+                ### 3333 müssen wir an den schluss verschieben
                 if irelax == 0:
                     dthetadt = periodic(dthetadt, nx, nb)
                 else:
@@ -758,6 +807,10 @@ if __name__ == "__main__":
 
         if idbg == 1:
             print("Preparing next time step ...\n")
+
+        ### 4444 hier müssen wir alles wieder zusammen fügen, die diffusion und die boundary sachen machen
+        ### 4444 alternativ könnten wir auch immer nur bei den outputschritten alles zusammen fügen und hier einfach 
+        ### die benachbarten thrads dei ränder senden lassen.
 
         # *** Exercise 2.1 / 4.1 / 5.1 ***
         # *** exchange isentropic mass density and velocity ***
@@ -775,14 +828,7 @@ if __name__ == "__main__":
             nrold = nrnow
             nrnow = nrnew
 
-        qvold = qvnow
-        qvnow = qvnew
 
-        qcold = qcnow
-        qcnow = qcnew
-
-        qrold = qrnow
-        qrnow = qrnew
 
         sold = snow
         snow = snew
@@ -793,13 +839,23 @@ if __name__ == "__main__":
         if imoist == 1:
             if idbg == 1:
                 print("exchange moisture variables")
+        
+            qvold = qvnow
+            qvnow = qvnew
+
+            qcold = qcnow
+            qcnow = qcnew
+
+            qrold = qrnow
+            qrnow = qrnew
+        #
 
             if imicrophys == 2:
                 if idbg == 1:
                     print("exchange number densitiy variables")
-
-        #
+            
         # *** Exercise 2.1 / 4.1 / 5.1 ***
+
 
         # check maximum cfl criterion
         # ---------------------------------
