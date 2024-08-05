@@ -582,7 +582,7 @@ if __name__ == "__main__":
 
         ### 3333 ich habe die grundsätzliche frage ob es sin machen würde die imports am andfang der funktionen, nicht zu machen sondern alles an die funktionen zu übergeben
         ### 3333 sold, snow             (nx + nb*2, nz)         split
-        ### 3333 sold, snow             (nx + nb*2 + 1, nz)     split
+        ### 3333 uold, unow             (nx + nb*2 + 1, nz)     split
         ### 3333 dtdx                   float                   global
         ### 3333 dthetadt               (nx + nb*2, nz + 1)     split
         
