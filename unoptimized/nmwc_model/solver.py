@@ -358,7 +358,7 @@ if __name__ == "__main__":
 
         # relax topography
         if (rank == 0) | (rank == rank_size-1):
-        topo = relax(topo, nx, nb, tbnd1, tbnd2)
+            topo = relax(topo, nx, nb, tbnd1, tbnd2)
     else:
         if idbg == 1:
             print("Periodic topography ...\n")
