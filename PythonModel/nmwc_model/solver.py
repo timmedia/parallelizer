@@ -574,59 +574,89 @@ if __name__ == "__main__":
         # print("snew: ", snew[5,5])
         # print()
 
-        #scattering
+        ####################################scattering
 
-
-        if rank == 0:
-            print(0)
-        else:
-            global_a = None
-            
+        
         nx_p = nx+(rank_size+1)*nb
-        counts = [(nx_p//rank_size + int(np.ceil(nx_p%rank_size/2)))*nz] + [(nx_p//rank_size)*nz] * (rank_size - 2) + [(nx_p//rank_size + int(np.floor(nx_p%rank_size/2)))*nz]
-        displacements = [sum(counts[:i]) for i in range(rank_size)]
+        #horizonntally unstagered and vertically unstaggered
+        counts_un = [(nx_p//rank_size + int(np.ceil(nx_p%rank_size/2)))*nz] + [(nx_p//rank_size)*nz] * (rank_size - 2) + [(nx_p//rank_size + int(np.floor(nx_p%rank_size/2)))*nz]
+        displacements_un = [sum(counts_un[:i]) for i in range(rank_size)]
 
-        a = np.empty((counts[rank]//nz,nz), dtype=np.float64)
+        #horizonntally unstagered and vertically 1D
+        counts_un_1D = [(nx_p//rank_size + int(np.ceil(nx_p%rank_size/2)))*1] + [(nx_p//rank_size)*1] * (rank_size - 2) + [(nx_p//rank_size + int(np.floor(nx_p%rank_size/2)))*1]
+        displacements_un_1D = [sum(counts_un_1D[:i]) for i in range(rank_size)]
 
+        #horizonntally unstagered and vertically staggered
+        counts_vs = [(nx_p//rank_size + int(np.ceil(nx_p%rank_size/2)))*(nz+1)] + [(nx_p//rank_size)*(nz+1)] * (rank_size - 2) + [(nx_p//rank_size + int(np.floor(nx_p%rank_size/2)))*(nz+1)]
+        displacements_vs = [sum(counts_vs[:i]) for i in range(rank_size)]
 
-
-
-        sold = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-        snow = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-        snew = np.empty((counts[rank]//nz,nz), dtype=np.float64)
+        sold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        snow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        snew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
         uold = np.empty((nx // rank_size,nz), dtype=np.float64)
         unow = np.empty((nx // rank_size,nz), dtype=np.float64)
         unow = np.empty((nx // rank_size,nz), dtype=np.float64)
-        dthetadt = np.empty((counts[rank]//nz,nz+1), dtype=np.float64)
-        mtg = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-        prs = np.empty((counts[rank]//nz,nz+1), dtype=np.float64)
-        topo = np.empty((counts[rank]//nz,1), dtype=np.float64)
-        zhtold = np.empty((counts[rank]//nz,nz+1), dtype=np.float64)
-        zhtnow = np.empty((counts[rank]//nz,nz+1), dtype=np.float64)
-        prec = np.empty((counts[rank]//nz,1), dtype=np.float64)
-        tot_prec = np.empty((counts[rank]//nz,1), dtype=np.float64)
+        dthetadt = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+        mtg = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        prs = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+        topo = np.empty((counts_un_1D[rank],1), dtype=np.float64)
+        zhtold = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+        zhtnow = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+        exn = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
         if imoist == 1:
-            qvold = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            qcold = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            qrold = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            qvnow = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            qcnow = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            qrnow = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            qvnew = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            qcnew = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            qrnew = np.empty((counts[rank]//nz,nz), dtype=np.float64)
+            qvold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            qcold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            qrold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            qvnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            qcnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            qrnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            qvnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            qcnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            qrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            lheat = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+            prec = np.empty((counts_un_1D[rank],1), dtype=np.float64)
+            tot_prec = np.empty((counts_un_1D[rank],1), dtype=np.float64)
+            if imicrophys == 2:
+                ncold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+                nrold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+                ncnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+                nrnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+                ncnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+                nrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+
+
+    comm.Scatterv([sold_g,counts_un,displacements_un,MPI.DOUBLE], sold, root=0)
+    comm.Scatterv([snow_g,counts_un,displacements_un,MPI.DOUBLE], snow, root=0)
+    # comm.Scatterv([snew_g,counts_un,displacements_un,MPI.DOUBLE], snew, root=0)
+    comm.Scatterv([dthetadt_g,counts_vs,displacements_vs,MPI.DOUBLE], dthetadt, root=0)
+    comm.Scatterv([mtg_g,counts_un,displacements_un,MPI.DOUBLE], mtg, root=0)
+    comm.Scatterv([prs_g,counts_vs,displacements_vs,MPI.DOUBLE], prs, root=0)
+    comm.Scatterv([topo_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], topo, root=0)
+    comm.Scatterv([zhtold_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtold, root=0)
+    comm.Scatterv([zhtnow_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtnow, root=0)
+    # comm.Scatterv([exn_g,counts_vs,displacements_vs,MPI.DOUBLE], exn, root=0)
+    if imoist == 1:
+        comm.Scatterv([qvold_g,counts_un,displacements_un,MPI.DOUBLE], qvold, root=0)
+        comm.Scatterv([qcold_g,counts_un,displacements_un,MPI.DOUBLE], qcold, root=0)
+        comm.Scatterv([qrold_g,counts_un,displacements_un,MPI.DOUBLE], qrold, root=0)
+        comm.Scatterv([qvnow_g,counts_un,displacements_un,MPI.DOUBLE], qvnow, root=0)
+        comm.Scatterv([qcnow_g,counts_un,displacements_un,MPI.DOUBLE], qcnow, root=0)
+        comm.Scatterv([qrnow_g,counts_un,displacements_un,MPI.DOUBLE], qrnow, root=0)
+        # comm.Scatterv([qvnew_g,counts_un,displacements_un,MPI.DOUBLE], qvnew, root=0)
+        # comm.Scatterv([qcnew_g,counts_un,displacements_un,MPI.DOUBLE], qcnew, root=0)
+        # comm.Scatterv([qrnew_g,counts_un,displacements_un,MPI.DOUBLE], qvnew, root=0)
+        # comm.Scatterv([lheat_g,counts_vs,displacements_vs,MPI.DOUBLE], lheat, root=0)
+        comm.Scatterv([prec_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], prec, root=0)
+        comm.Scatterv([tot_prec_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], tot_prec, root=0)
         if imicrophys == 2:
-            ncold = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            nrold = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            ncnow = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            nrnow = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            ncnew = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-            nrnew = np.empty((counts[rank]//nz,nz), dtype=np.float64)
-        exn = np.empty((counts[rank]//nz,nz+1), dtype=np.float64)
-        lheat = np.empty((counts[rank]//nz,nz+1), dtype=np.float64)
+            comm.Scatterv([ncold_g,counts_un,displacements_un,MPI.DOUBLE], ncold, root=0)
+            comm.Scatterv([nrold_g,counts_un,displacements_un,MPI.DOUBLE], nrold, root=0)
+            comm.Scatterv([ncnow_g,counts_un,displacements_un,MPI.DOUBLE], ncnow, root=0)
+            comm.Scatterv([nrnow_g,counts_un,displacements_un,MPI.DOUBLE], nrnow, root=0)
+            # comm.Scatterv([ncnew_g,counts_un,displacements_un,MPI.DOUBLE], ncnew, root=0)
+            # comm.Scatterv([nrnew_g,counts_un,displacements_un,MPI.DOUBLE], nrnew, root=0)
 
 
-    comm.Scatterv([global_a,counts,displacements,MPI.DOUBLE], a, root=0)
 
 
         
