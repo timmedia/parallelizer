@@ -15,8 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
-from nmwc_model.readsim import readsim
-from nmwc_model.xzplot import plot_dict
+from readsim import readsim
+from xzplot import plot_dict
 
 
 def arg_parser():

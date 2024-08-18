@@ -34,21 +34,21 @@ from time import time as tm  # Benchmarking tools
 import sys
 
 # import model functions
-from nmwc_model.makesetup import maketopo, makeprofile
-from nmwc_model.boundary import periodic, relax
-from nmwc_model.prognostics import (
+from makesetup import maketopo, makeprofile
+from boundary import periodic, relax
+from prognostics import (
     prog_isendens,
     prog_velocity,
     prog_moisture,
     prog_numdens,
 )
-from nmwc_model.diagnostics import diag_montgomery, diag_pressure, diag_height
-from nmwc_model.diffusion import horizontal_diffusion
-from nmwc_model.output import makeoutput, write_output
-from nmwc_model.microphysics import kessler, seifert
+from diagnostics import diag_montgomery, diag_pressure, diag_height
+from diffusion import horizontal_diffusion
+from output import makeoutput, write_output
+from microphysics import kessler, seifert
 
 # import global namelist variables
-from nmwc_model.namelist import (
+from namelist import (
     imoist,
     imicrophys,
     irelax,
@@ -77,6 +77,12 @@ from nmwc_model.namelist import (
     itime,
 )
 
+#import mpi4py
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+rank_size = comm.Get_size()
 
 if __name__ == "__main__":
     # Print the full precision
@@ -351,6 +357,7 @@ if __name__ == "__main__":
         tbnd2 = topo[-1]
 
         # relax topography
+        if (rank == 0) | (rank == rank_size-1):
         topo = relax(topo, nx, nb, tbnd1, tbnd2)
     else:
         if idbg == 1:
@@ -598,20 +605,21 @@ if __name__ == "__main__":
         # relaxation of prognostic fields
         # -------------------------------------------------------------------------
         if irelax == 1:
-            if idbg == 1:
-                print("Relaxing prognostic fields ...\n")
-            snew = relax(snew, nx, nb, sbnd1, sbnd2)
-            unew = relax(unew, nx1, nb, ubnd1, ubnd2)
-            if imoist == 1:
+            if (rank == 0) | (rank == rank_size-1): 
+                if idbg == 1:
+                    print("Relaxing prognostic fields ...\n")
+                snew = relax(snew, nx, nb, sbnd1, sbnd2)
+                unew = relax(unew, nx1, nb, ubnd1, ubnd2)
+                if imoist == 1:
 
-                qvnew = relax(qvnew, nx, nb, qvbnd1, qvbnd2)
-                qcnew = relax(qcnew, nx, nb, qcbnd1, qcbnd2)
-                qrnew = relax(qrnew, nx, nb, qrbnd1, qrbnd2)
+                    qvnew = relax(qvnew, nx, nb, qvbnd1, qvbnd2)
+                    qcnew = relax(qcnew, nx, nb, qcbnd1, qcbnd2)
+                    qrnew = relax(qrnew, nx, nb, qrbnd1, qrbnd2)
 
-            # 2-moment scheme
-            if imoist == 1 and imicrophys == 2:
-                ncnew = relax(ncnew, nx, nb, ncbnd1, ncbnd2)
-                nrnew = relax(nrnew, nx, nb, nrbnd1, nrbnd2)
+                # 2-moment scheme
+                if imoist == 1 and imicrophys == 2:
+                    ncnew = relax(ncnew, nx, nb, ncbnd1, ncbnd2)
+                    nrnew = relax(nrnew, nx, nb, nrbnd1, nrbnd2)
 
         # Diffusion and gravity wave absorber
         # ------------------------------------
@@ -722,7 +730,8 @@ if __name__ == "__main__":
                 else:
                     # Relax latent heat fields
                     # ----------------------------
-                    dthetadt = relax(dthetadt, nx, nb, dthetadtbnd1, dthetadtbnd2)
+                    if (rank == 0) | (rank == rank_size-1):
+                        dthetadt = relax(dthetadt, nx, nb, dthetadtbnd1, dthetadtbnd2)
             else:
                 dthetadt = np.zeros((nxb, nz1))
 

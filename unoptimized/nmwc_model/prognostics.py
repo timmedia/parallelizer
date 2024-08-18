@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from nmwc_model.namelist import (
+from namelist import (
     idbg,
     idthdt,
     nx,

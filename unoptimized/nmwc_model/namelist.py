@@ -23,7 +23,7 @@ thl = 350.0  # domain depth  [K]
 nz = 60  # vertical resolution
 dt = 5  # time step [s]
 diff = 0.02  # (horizontal) diffusion coefficient
-time = 6 * 60 * 60  # integration time [s]
+time = 60  # integration time [s]
 
 # Topography
 # -------------------------------------------------

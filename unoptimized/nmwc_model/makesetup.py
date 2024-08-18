@@ -2,8 +2,8 @@
 import numpy as np
 import sys
 
-from nmwc_model.meteo_utilities import rrmixv1
-from nmwc_model.namelist import (
+from meteo_utilities import rrmixv1
+from namelist import (
     bv00,
     cp,
     cpdr,
