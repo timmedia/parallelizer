@@ -588,6 +588,7 @@ if __name__ == "__main__":
         
 
         snew = prog_isendens(sold, snow, unow, dtdx, dthetadt = dthetadt)
+        gprint(snew.shape)
         #
         # *** Exercise 2.1 isentropic mass density ***
 

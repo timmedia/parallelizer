@@ -17,10 +17,10 @@ iiniout = 1  # write initial field (0 = no, 1 = yes)
 #hoi2   zggvgzvgzvgz
 # -------------------------------------------------
 xl = 5000000.0  # domain size  [m]
-nx = 1000  # number of grid points in horizontal direction
+nx = 100  # number of grid points in horizontal direction
 dx = xl / nx  # horizontal resolution [m]
 thl = 150.0*3  # domain depth  [K]
-nz = 60*3  # vertical resolution
+nz = 60  # vertical resolution
 dt = 10  # time step [s]
 diff = 0.02  # (horizontal) diffusion coefficient
 time = dt  # integration time [s]
