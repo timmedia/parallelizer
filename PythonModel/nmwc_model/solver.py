@@ -77,6 +77,13 @@ from nmwc_model.namelist import (
     itime,
 )
 
+#import mpi4py
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+rank_size = comm.Get_size()
+
 u_gianni = np.arange(1)
 if __name__ == "__main__":
     # Print the full precision
@@ -91,11 +98,11 @@ if __name__ == "__main__":
     # -------------------------
 
     # topography
-    topo = np.zeros((nxb, 1))
+    topo_g = np.zeros((nxb, 1))
 
     # height in z-coordinates
-    zhtold = np.zeros((nxb, nz1))
-    zhtnow = np.zeros_like(zhtold)
+    zhtold_g = np.zeros((nxb, nz1))
+    zhtnow_g = np.zeros_like(zhtold)
     Z = np.zeros((nout, nz1, nx))  # auxilary field for output
 
     # horizontal velocity
@@ -105,67 +112,67 @@ if __name__ == "__main__":
     U = np.zeros((nout, nz, nx))  # auxilary field for output
 
     # isentropic density
-    sold = np.zeros((nxb, nz))
-    snow = np.zeros_like(sold)
+    sold_g = np.zeros((nxb, nz))
+    snow_g = np.zeros_like(sold)
     snew = np.zeros_like(sold)
     S = np.zeros((nout, nz, nx))  # auxilary field for output
 
     # Montgomery potential
-    mtg = np.zeros((nxb, nz))
+    mtg_g = np.zeros((nxb, nz))
     mtgnew = np.zeros_like(mtg)
 
     # Exner function
     exn = np.zeros((nxb, nz1))
 
     # pressure
-    prs = np.zeros((nxb, nz1))
+    prs_g = np.zeros((nxb, nz1))
 
     # output time vector
     T = np.arange(1, nout + 1)
 
     if imoist == 1:
         # precipitation
-        prec = np.zeros(nxb)
+        prec_g = np.zeros(nxb)
         PREC = np.zeros((nout, nx))  #  auxiliary field for output
 
         # accumulated precipitation
-        tot_prec = np.zeros(nxb)
+        tot_prec_g = np.zeros(nxb)
         TOT_PREC = np.zeros((nout, nx))  #  auxiliary field for output
 
         # specific humidity
-        qvold = np.zeros((nxb, nz))
-        qvnow = np.zeros_like(qvold)
+        qvold_g = np.zeros((nxb, nz))
+        qvnow_g = np.zeros_like(qvold)
         qvnew = np.zeros_like(qvold)
         QV = np.zeros((nout, nz, nx))  # auxiliary field for output
 
         # specific cloud water content
-        qcold = np.zeros((nxb, nz))
-        qcnow = np.zeros_like(qcold)
+        qcold_g = np.zeros((nxb, nz))
+        qcnow_g = np.zeros_like(qcold)
         qcnew = np.zeros_like(qcold)
         QC = np.zeros((nout, nz, nx))  # auxiliary field for output
 
         # specific rain water content
-        qrold = np.zeros((nxb, nz))
-        qrnow = np.zeros_like(qrold)
+        qrold_g = np.zeros((nxb, nz))
+        qrnow_g = np.zeros_like(qrold)
         qrnew = np.zeros_like(qrold)
         QR = np.zeros((nout, nz, nx))  # auxiliary field for output
 
         if imicrophys == 2:
             # cloud droplet number density
-            ncold = np.zeros((nxb, nz))
-            ncnow = np.zeros_like(ncold)
+            ncold_g = np.zeros((nxb, nz))
+            ncnow_g = np.zeros_like(ncold)
             ncnew = np.zeros_like(ncold)
             NC = np.zeros((nout, nz, nx))  # auxiliary field for output
 
             # rain-droplet number density
-            nrold = np.zeros((nxb, nz))
-            nrnow = np.zeros_like(nrold)
+            nrold_g = np.zeros((nxb, nz))
+            nrnow_g = np.zeros_like(nrold)
             nrnew = np.zeros_like(nrold)
             NR = np.zeros((nout, nz, nx))  # auxiliary field for output
 
         if idthdt == 1:
             # latent heating
-            dthetadt = np.zeros((nxb, nz1))
+            dthetadt_g = np.zeros((nxb, nz1))
             DTHETADT = np.zeros((nout, nz, nx))  # auxiliary field for output
 
     # Define fields at lateral boundaries
@@ -351,7 +358,8 @@ if __name__ == "__main__":
         tbnd2 = topo[-1]
 
         # relax topography
-        topo = relax(topo, nx, nb, tbnd1, tbnd2)
+        if (rank == 0) | (rank == rank_size-1):
+            topo = relax(topo, nx, nb, tbnd1, tbnd2)
     else:
         if idbg == 1:
             print("Periodic topography ...\n")
@@ -561,6 +569,37 @@ if __name__ == "__main__":
         # print("snew: ", snew[5,5])
         # print()
 
+        #scattering
+        if rank == 0:
+            global_a = np.arange(num_elements).reshape(nx, nz).astype(np.float64)
+        else:
+            global_a = None
+        a = np.empty((nx // rank_size,nz), dtype=np.float64)
+        comm.Scatter(global_a, a, root=0)
+
+        sold = np.empty((nx // rank_size,nz), dtype=np.float64)
+        snow = np.empty((nx // rank_size,nz), dtype=np.float64)
+        dthetadt = np.empty((nx // rank_size,nz), dtype=np.float64)
+        mtg = np.empty((nx // rank_size,nz), dtype=np.float64)
+        prs = np.empty((nx // rank_size,nz), dtype=np.float64)
+        topo = np.empty((nx // rank_size,nz), dtype=np.float64)
+        zhtold = np.empty((nx // rank_size,nz), dtype=np.float64)
+        zhtnow = np.empty((nx // rank_size,nz), dtype=np.float64)
+        prec = np.empty((nx // rank_size,nz), dtype=np.float64)
+        tot_prec = np.empty((nx // rank_size,nz), dtype=np.float64)
+        qvold = np.empty((nx // rank_size,nz), dtype=np.float64)
+        qcold = np.empty((nx // rank_size,nz), dtype=np.float64)
+        qrold = np.empty((nx // rank_size,nz), dtype=np.float64)
+        qvnow = np.empty((nx // rank_size,nz), dtype=np.float64)
+        qcnow = np.empty((nx // rank_size,nz), dtype=np.float64)
+        qrnow = np.empty((nx // rank_size,nz), dtype=np.float64)
+        ncold = np.empty((nx // rank_size,nz), dtype=np.float64)
+        nrold = np.empty((nx // rank_size,nz), dtype=np.float64)
+        ncnow = np.empty((nx // rank_size,nz), dtype=np.float64)
+        nrnow = np.empty((nx // rank_size,nz), dtype=np.float64)
+
+
+
         
         snew = prog_isendens(sold, snow, unow, dtdx, dthetadt = dthetadt)
         #
@@ -620,20 +659,21 @@ if __name__ == "__main__":
         # relaxation of prognostic fields
         # -------------------------------------------------------------------------
         if irelax == 1:
-            if idbg == 1:
-                print("Relaxing prognostic fields ...\n")
-            snew = relax(snew, nx, nb, sbnd1, sbnd2)
-            unew = relax(unew, nx1, nb, ubnd1, ubnd2)
-            if imoist == 1:
+            if (rank == 0) | (rank == rank_size-1): 
+                if idbg == 1:
+                    print("Relaxing prognostic fields ...\n")
+                snew = relax(snew, nx, nb, sbnd1, sbnd2)
+                unew = relax(unew, nx1, nb, ubnd1, ubnd2)
+                if imoist == 1:
 
-                qvnew = relax(qvnew, nx, nb, qvbnd1, qvbnd2)
-                qcnew = relax(qcnew, nx, nb, qcbnd1, qcbnd2)
-                qrnew = relax(qrnew, nx, nb, qrbnd1, qrbnd2)
+                    qvnew = relax(qvnew, nx, nb, qvbnd1, qvbnd2)
+                    qcnew = relax(qcnew, nx, nb, qcbnd1, qcbnd2)
+                    qrnew = relax(qrnew, nx, nb, qrbnd1, qrbnd2)
 
-            # 2-moment scheme
-            if imoist == 1 and imicrophys == 2:
-                ncnew = relax(ncnew, nx, nb, ncbnd1, ncbnd2)
-                nrnew = relax(nrnew, nx, nb, nrbnd1, nrbnd2)
+                # 2-moment scheme
+                if imoist == 1 and imicrophys == 2:
+                    ncnew = relax(ncnew, nx, nb, ncbnd1, ncbnd2)
+                    nrnew = relax(nrnew, nx, nb, nrbnd1, nrbnd2)
 
         # Diffusion and gravity wave absorber
         # ------------------------------------
@@ -752,7 +792,8 @@ if __name__ == "__main__":
                 else:
                     # Relax latent heat fields
                     # ----------------------------
-                    dthetadt = relax(dthetadt, nx, nb, dthetadtbnd1, dthetadtbnd2)
+                    if (rank == 0) | (rank == rank_size-1):
+                        dthetadt = relax(dthetadt, nx, nb, dthetadtbnd1, dthetadtbnd2)
             else:
                 dthetadt = np.zeros((nxb, nz1))
 
