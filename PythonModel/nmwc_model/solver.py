@@ -575,19 +575,24 @@ if __name__ == "__main__":
         # print()
 
         ####################################scattering
-
+x = 24
+z = 6
+nb = 2
+num_elements = x * z
+x_p = x+(size-1)*nb
+counts = [(x_p//size+2)*z] +[(x_p//size+ int(np.ceil(x_p%size/2)))*z]+ [(x_p//size)*z] * (size - 4) +[(x_p//size+int(np.floor(x_p%size/2)))*z]+ [(x_p//size +2)*z]
         
-        nx_p = nx+(rank_size+1)*nb
         #horizonntally unstagered and vertically unstaggered
-        counts_un = [(nx_p//rank_size + int(np.ceil(nx_p%rank_size/2)))*nz] + [(nx_p//rank_size)*nz] * (rank_size - 2) + [(nx_p//rank_size + int(np.floor(nx_p%rank_size/2)))*nz]
-        displacements_un = [sum(counts_un[:i]) for i in range(rank_size)]
+        nx_un = nx+(rank_size-1)*nb
+        counts_un = [(nx_un//rank_size+2)*nz] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size)*nz] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size +2)*nz]
+        displacements_un = [sum(counts[:i]) for i in range(0,rank_size)]
 
         #horizonntally unstagered and vertically 1D
-        counts_un_1D = [(nx_p//rank_size + int(np.ceil(nx_p%rank_size/2)))*1] + [(nx_p//rank_size)*1] * (rank_size - 2) + [(nx_p//rank_size + int(np.floor(nx_p%rank_size/2)))*1]
+        counts_un_1D = [(nx_un//rank_size+2)*1] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size)*1] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size +2)*1]
         displacements_un_1D = [sum(counts_un_1D[:i]) for i in range(rank_size)]
 
         #horizonntally unstagered and vertically staggered
-        counts_vs = [(nx_p//rank_size + int(np.ceil(nx_p%rank_size/2)))*(nz+1)] + [(nx_p//rank_size)*(nz+1)] * (rank_size - 2) + [(nx_p//rank_size + int(np.floor(nx_p%rank_size/2)))*(nz+1)]
+        counts_vs = [(nx_un//rank_size+2)*(nz+1)] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size)*(nz+1)] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size +2)*(nz+1)]
         displacements_vs = [sum(counts_vs[:i]) for i in range(rank_size)]
 
         sold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
@@ -623,6 +628,36 @@ if __name__ == "__main__":
                 nrnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
                 ncnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
                 nrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+
+x = 24
+z = 6
+nb = 2
+num_elements = x * z
+x_p = x+(size-1)*nb
+counts = [(x_p//size+2)*z] +[(x_p//size+ int(np.ceil(x_p%size/2)))*z]+ [(x_p//size)*z] * (size - 4) +[(x_p//size+int(np.floor(x_p%size/2)))*z]+ [(x_p//size +2)*z]
+displacements = [sum(counts[:i]) for i in range(0,size)]
+if rank == 0:
+    global_a = np.arange(num_elements).reshape(x, z).astype(np.float64)
+    global_a = np.insert(global_a, 0, np.zeros((2,z), dtype=np.float64), axis=0)
+    global_a = np.insert(global_a, x+2, np.zeros((2,z), dtype=np.float64), axis=0)
+    for j,i in enumerate(displacements[1:]):
+        print(global_a[i//z])
+        global_a = np.insert(global_a, i//z, global_a[i//z-nb:i//z], axis=0)
+        print(i//z)
+else:
+    global_a = None
+print(global_a)
+# x_p = x+(size-1)*nb+4
+# counts = [(x_p//size + int(np.ceil(x_p%size/2)))*z] + [(x_p//size)*z] * (size - 2) + [(x_p//size + int(np.floor(x_p%size/2)))*z]
+print(counts)
+# a = np.empty((x // size+nb,z), dtype=np.float64)
+a = np.empty((counts[rank]//z,z), dtype=np.float64)
+# recvbuf = np.empty((counts[rank] // 6, 6), dtype=np.int)
+comm.Scatterv([global_a,counts,displacements,MPI.DOUBLE], a, root=0)
+
+
+
+print("Rank {} has a = {}".format(rank, a))
 
 
     comm.Scatterv([sold_g,counts_un,displacements_un,MPI.DOUBLE], sold, root=0)
