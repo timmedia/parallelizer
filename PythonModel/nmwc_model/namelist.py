@@ -17,7 +17,7 @@ iiniout = 1  # write initial field (0 = no, 1 = yes)
 #hoi2   zggvgzvgzvgz
 # -------------------------------------------------
 xl = 500000.0  # domain size  [m]
-nx = 100  # number of grid points in horizontal direction
+nx = 1000  # number of grid points in horizontal direction
 dx = xl / nx  # horizontal resolution [m]
 thl = 150.0  # domain depth  [K]
 nz = 60  # vertical resolution

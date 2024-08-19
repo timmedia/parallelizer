@@ -520,6 +520,8 @@ if __name__ == "__main__":
                 )
 
 
+    #finding points where the fields are scattered
+
     #horizonntally unstagered and vertically unstaggered
     nx_un = nx+(rank_size-1)*nb
     counts_un = [(nx_un//rank_size+2)*nz] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size)*nz] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size +2)*nz]
@@ -538,6 +540,11 @@ if __name__ == "__main__":
     counts_hs = [(nx_hs//rank_size+2)*nz] +[(nx_hs//rank_size+ int(np.ceil(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size)*nz] * (rank_size - 4) +[(nx_hs//rank_size+int(np.floor(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size +2)*nz]
     displacements_hs = [sum(counts_hs[:i]) for i in range(rank_size)]
 
+    nx_p = counts_un[rank]//nz
+    nx1_p = nx_p + 1
+    nxb_p = nx_p + 2*nb
+    
+    # gereating empty arrays for scattering
     sold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
     snow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
     snew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
@@ -622,119 +629,118 @@ if __name__ == "__main__":
         # print("snew: ", snew[5,5])
         # print()
 
-        ####################################scattering
 
-
-    if rank == 0:
-        for x_loc in displacements_un:
-            sold_g = np.insert(sold_g, x_loc//nz,sold_g[x_loc//nz-nb:x_loc//nz], axis=0)
-            snow_g = np.insert(snow_g, x_loc//nz,snow_g[x_loc//nz-nb:x_loc//nz], axis=0)
-            # snew_g = np.insert(snew_g, x_loc//nz,snew_g[i//nz-nb:i//nz], axis=0)
-            uold_g = np.insert(uold_g, (x_loc + 1)//nz,uold_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
-            unow_g = np.insert(unow_g, (x_loc + 1)//nz,unow_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
-            # unew_g = np.insert(unew_g, (x_loc + 1)//nz,unew_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
-            dthetadt_g = np.insert(dthetadt_g, x_loc//(nz+1),dthetadt_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
-            mtg_g = np.insert(mtg_g, x_loc//nz,mtg_g[x_loc//nz-nb:x_loc//nz], axis=0)
-            prs_g = np.insert(prs_g, x_loc//(nz+1),prs_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
-            topo_g = np.insert(topo_g, x_loc//1,topo_g[x_loc//nz-nb:x_loc//1], axis=0)
-            zhtold_g = np.insert(zhtold_g, x_loc//(nz+1),zhtold_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
-            zhtnow_g = np.insert(zhtnow_g, x_loc//(nz+1),zhtnow_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
-            # exn_g = np.insert(exn_g, x_loc//(nz+1),exn_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
-        if imoist == 1:
+        ##generating buffered global fields with boundarys for scattering
+        if rank == 0:
             for x_loc in displacements_un:
-                qvold_g = np.insert(qvold_g, x_loc//nz,qvold_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                qcold_g = np.insert(qcold_g, x_loc//nz,qcold_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                qrold_g = np.insert(qrold_g, x_loc//nz,qrold_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                qvnow_g = np.insert(qvnow_g, x_loc//nz,qvnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                qcnow_g = np.insert(qcnow_g, x_loc//nz,qcnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                qrnow_g = np.insert(qrnow_g, x_loc//nz,qrnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                # qvnew_g = np.insert(qvnew_g, x_loc//nz,qvnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                # qcnew_g = np.insert(qcnew_g, x_loc//nz,qcnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                # qrnew_g = np.insert(qrnew_g, x_loc//nz,qrnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                prec_g = np.insert(prec_g, x_loc//1,prec_g[x_loc//nz-nb:x_loc//1], axis=0)
-                tot_prec_g = np.insert(tot_prec_g, x_loc//1,tot_prec_g[x_loc//nz-nb:x_loc//1], axis=0)
-        if (imoist == 1)&(imicrophys == 2):
-            for x_loc in displacements_un:
-                ncold_g = np.insert(ncold_g, x_loc//nz,ncold_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                nrold_g = np.insert(nrold_g, x_loc//nz,nrold_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                ncnow_g = np.insert(ncnow_g, x_loc//nz,ncnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                nrnow_g = np.insert(nrnow_g, x_loc//nz,nrnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                # ncnew_g = np.insert(ncnew_g, x_loc//nz,ncnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                # nrnew_g = np.insert(nrnew_g, x_loc//nz,nrnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
-    else:
-        sold_g = None
-        snow_g = None
-        # snew_g = None
-        uold_g = None
-        unow_g = None
-        # unew_g = None
-        dthetadt_g = None
-        mtg_g = None
-        prs_g = None
-        topo_g = None
-        zhtold_g = None
-        zhtnow_g = None
-        # exn_g = None
+                sold_g = np.insert(sold_g, x_loc//nz,sold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                snow_g = np.insert(snow_g, x_loc//nz,snow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                # snew_g = np.insert(snew_g, x_loc//nz,snew_g[i//nz-nb:i//nz], axis=0)
+                uold_g = np.insert(uold_g, (x_loc + 1)//nz,uold_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
+                unow_g = np.insert(unow_g, (x_loc + 1)//nz,unow_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
+                # unew_g = np.insert(unew_g, (x_loc + 1)//nz,unew_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
+                dthetadt_g = np.insert(dthetadt_g, x_loc//(nz+1),dthetadt_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+                mtg_g = np.insert(mtg_g, x_loc//nz,mtg_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                prs_g = np.insert(prs_g, x_loc//(nz+1),prs_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+                topo_g = np.insert(topo_g, x_loc//1,topo_g[x_loc//nz-nb:x_loc//1], axis=0)
+                zhtold_g = np.insert(zhtold_g, x_loc//(nz+1),zhtold_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+                zhtnow_g = np.insert(zhtnow_g, x_loc//(nz+1),zhtnow_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+                # exn_g = np.insert(exn_g, x_loc//(nz+1),exn_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+            if imoist == 1:
+                for x_loc in displacements_un:
+                    qvold_g = np.insert(qvold_g, x_loc//nz,qvold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qcold_g = np.insert(qcold_g, x_loc//nz,qcold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qrold_g = np.insert(qrold_g, x_loc//nz,qrold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qvnow_g = np.insert(qvnow_g, x_loc//nz,qvnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qcnow_g = np.insert(qcnow_g, x_loc//nz,qcnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qrnow_g = np.insert(qrnow_g, x_loc//nz,qrnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # qvnew_g = np.insert(qvnew_g, x_loc//nz,qvnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # qcnew_g = np.insert(qcnew_g, x_loc//nz,qcnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # qrnew_g = np.insert(qrnew_g, x_loc//nz,qrnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    prec_g = np.insert(prec_g, x_loc//1,prec_g[x_loc//nz-nb:x_loc//1], axis=0)
+                    tot_prec_g = np.insert(tot_prec_g, x_loc//1,tot_prec_g[x_loc//nz-nb:x_loc//1], axis=0)
+            if (imoist == 1)&(imicrophys == 2):
+                for x_loc in displacements_un:
+                    ncold_g = np.insert(ncold_g, x_loc//nz,ncold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    nrold_g = np.insert(nrold_g, x_loc//nz,nrold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    ncnow_g = np.insert(ncnow_g, x_loc//nz,ncnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    nrnow_g = np.insert(nrnow_g, x_loc//nz,nrnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # ncnew_g = np.insert(ncnew_g, x_loc//nz,ncnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # nrnew_g = np.insert(nrnew_g, x_loc//nz,nrnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+        else:
+            sold_g = None
+            snow_g = None
+            # snew_g = None
+            uold_g = None
+            unow_g = None
+            # unew_g = None
+            dthetadt_g = None
+            mtg_g = None
+            prs_g = None
+            topo_g = None
+            zhtold_g = None
+            zhtnow_g = None
+            # exn_g = None
+            if imoist == 1:
+                qvold_g = None
+                qcold_g = None
+                qrold_g = None
+                qvnow_g = None
+                qcnow_g = None
+                qrnow_g = None
+                # qvnew_g = None
+                # qcnew_g = None
+                # qrnew_g = None
+                prec_g = None
+                tot_prec_g = None
+            if (imoist == 1)&(imicrophys == 2):
+                ncold_g = None
+                nrold_g = None
+                ncnow_g = None
+                nrnow_g = None
+                # ncnew_g = None
+                # nrnew_g = None
+
+        #scattering of all fields
+        comm.Scatterv([sold_g,counts_un,displacements_un,MPI.DOUBLE], sold, root=0)
+        comm.Scatterv([snow_g,counts_un,displacements_un,MPI.DOUBLE], snow, root=0)
+        # comm.Scatterv([snew_g,counts_un,displacements_un,MPI.DOUBLE], snew, root=0)
+        comm.Scatterv([uold_g,counts_hs,displacements_hs,MPI.DOUBLE], uold, root=0)
+        comm.Scatterv([unow_g,counts_hs,displacements_hs,MPI.DOUBLE], unow, root=0)
+        # comm.Scatterv([unew_g,counts_hs,displacements_hs,MPI.DOUBLE], unew, root=0)
+        comm.Scatterv([dthetadt_g,counts_vs,displacements_vs,MPI.DOUBLE], dthetadt, root=0)
+        comm.Scatterv([mtg_g,counts_un,displacements_un,MPI.DOUBLE], mtg, root=0)
+        comm.Scatterv([prs_g,counts_vs,displacements_vs,MPI.DOUBLE], prs, root=0)
+        comm.Scatterv([topo_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], topo, root=0)
+        comm.Scatterv([zhtold_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtold, root=0)
+        comm.Scatterv([zhtnow_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtnow, root=0)
+        # comm.Scatterv([exn_g,counts_vs,displacements_vs,MPI.DOUBLE], exn, root=0)
         if imoist == 1:
-            qvold_g = None
-            qcold_g = None
-            qrold_g = None
-            qvnow_g = None
-            qcnow_g = None
-            qrnow_g = None
-            # qvnew_g = None
-            # qcnew_g = None
-            # qrnew_g = None
-            prec_g = None
-            tot_prec_g = None
-        if (imoist == 1)&(imicrophys == 2):
-            ncold_g = None
-            nrold_g = None
-            ncnow_g = None
-            nrnow_g = None
-            # ncnew_g = None
-            # nrnew_g = None
+            comm.Scatterv([qvold_g,counts_un,displacements_un,MPI.DOUBLE], qvold, root=0)
+            comm.Scatterv([qcold_g,counts_un,displacements_un,MPI.DOUBLE], qcold, root=0)
+            comm.Scatterv([qrold_g,counts_un,displacements_un,MPI.DOUBLE], qrold, root=0)
+            comm.Scatterv([qvnow_g,counts_un,displacements_un,MPI.DOUBLE], qvnow, root=0)
+            comm.Scatterv([qcnow_g,counts_un,displacements_un,MPI.DOUBLE], qcnow, root=0)
+            comm.Scatterv([qrnow_g,counts_un,displacements_un,MPI.DOUBLE], qrnow, root=0)
+            # comm.Scatterv([qvnew_g,counts_un,displacements_un,MPI.DOUBLE], qvnew, root=0)
+            # comm.Scatterv([qcnew_g,counts_un,displacements_un,MPI.DOUBLE], qcnew, root=0)
+            # comm.Scatterv([qrnew_g,counts_un,displacements_un,MPI.DOUBLE], qvnew, root=0)
+            # comm.Scatterv([lheat_g,counts_vs,displacements_vs,MPI.DOUBLE], lheat, root=0)
+            comm.Scatterv([prec_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], prec, root=0)
+            comm.Scatterv([tot_prec_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], tot_prec, root=0)
+            if imicrophys == 2:
+                comm.Scatterv([ncold_g,counts_un,displacements_un,MPI.DOUBLE], ncold, root=0)
+                comm.Scatterv([nrold_g,counts_un,displacements_un,MPI.DOUBLE], nrold, root=0)
+                comm.Scatterv([ncnow_g,counts_un,displacements_un,MPI.DOUBLE], ncnow, root=0)
+                comm.Scatterv([nrnow_g,counts_un,displacements_un,MPI.DOUBLE], nrnow, root=0)
+                # comm.Scatterv([ncnew_g,counts_un,displacements_un,MPI.DOUBLE], ncnew, root=0)
+                # comm.Scatterv([nrnew_g,counts_un,displacements_un,MPI.DOUBLE], nrnew, root=0)
 
-
-    comm.Scatterv([sold_g,counts_un,displacements_un,MPI.DOUBLE], sold, root=0)
-    comm.Scatterv([snow_g,counts_un,displacements_un,MPI.DOUBLE], snow, root=0)
-    # comm.Scatterv([snew_g,counts_un,displacements_un,MPI.DOUBLE], snew, root=0)
-    comm.Scatterv([uold_g,counts_hs,displacements_hs,MPI.DOUBLE], uold, root=0)
-    comm.Scatterv([unow_g,counts_hs,displacements_hs,MPI.DOUBLE], unow, root=0)
-    # comm.Scatterv([unew_g,counts_hs,displacements_hs,MPI.DOUBLE], unew, root=0)
-    comm.Scatterv([dthetadt_g,counts_vs,displacements_vs,MPI.DOUBLE], dthetadt, root=0)
-    comm.Scatterv([mtg_g,counts_un,displacements_un,MPI.DOUBLE], mtg, root=0)
-    comm.Scatterv([prs_g,counts_vs,displacements_vs,MPI.DOUBLE], prs, root=0)
-    comm.Scatterv([topo_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], topo, root=0)
-    comm.Scatterv([zhtold_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtold, root=0)
-    comm.Scatterv([zhtnow_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtnow, root=0)
-    # comm.Scatterv([exn_g,counts_vs,displacements_vs,MPI.DOUBLE], exn, root=0)
-    if imoist == 1:
-        comm.Scatterv([qvold_g,counts_un,displacements_un,MPI.DOUBLE], qvold, root=0)
-        comm.Scatterv([qcold_g,counts_un,displacements_un,MPI.DOUBLE], qcold, root=0)
-        comm.Scatterv([qrold_g,counts_un,displacements_un,MPI.DOUBLE], qrold, root=0)
-        comm.Scatterv([qvnow_g,counts_un,displacements_un,MPI.DOUBLE], qvnow, root=0)
-        comm.Scatterv([qcnow_g,counts_un,displacements_un,MPI.DOUBLE], qcnow, root=0)
-        comm.Scatterv([qrnow_g,counts_un,displacements_un,MPI.DOUBLE], qrnow, root=0)
-        # comm.Scatterv([qvnew_g,counts_un,displacements_un,MPI.DOUBLE], qvnew, root=0)
-        # comm.Scatterv([qcnew_g,counts_un,displacements_un,MPI.DOUBLE], qcnew, root=0)
-        # comm.Scatterv([qrnew_g,counts_un,displacements_un,MPI.DOUBLE], qvnew, root=0)
-        # comm.Scatterv([lheat_g,counts_vs,displacements_vs,MPI.DOUBLE], lheat, root=0)
-        comm.Scatterv([prec_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], prec, root=0)
-        comm.Scatterv([tot_prec_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], tot_prec, root=0)
-        if imicrophys == 2:
-            comm.Scatterv([ncold_g,counts_un,displacements_un,MPI.DOUBLE], ncold, root=0)
-            comm.Scatterv([nrold_g,counts_un,displacements_un,MPI.DOUBLE], nrold, root=0)
-            comm.Scatterv([ncnow_g,counts_un,displacements_un,MPI.DOUBLE], ncnow, root=0)
-            comm.Scatterv([nrnow_g,counts_un,displacements_un,MPI.DOUBLE], nrnow, root=0)
-            # comm.Scatterv([ncnew_g,counts_un,displacements_un,MPI.DOUBLE], ncnew, root=0)
-            # comm.Scatterv([nrnew_g,counts_un,displacements_un,MPI.DOUBLE], nrnew, root=0)
-
-
+        ### every rank calculates its on x dimension
 
 
         
-        snew = prog_isendens(sold, snow, unow, dtdx, dthetadt = dthetadt)
+        snew = prog_isendens(sold, snow, unow, dtdx,nx_p, dthetadt = dthetadt)
         #
         # *** Exercise 2.1 isentropic mass density ***
 
@@ -746,10 +752,10 @@ if __name__ == "__main__":
         if imoist == 1:
             if idbg == 1:
                 print("Add function call to prog_moisture")
-            qvnew,qcnew,qrnew = prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx, dthetadt=dthetadt)
+            qvnew,qcnew,qrnew = prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx,nx_p, dthetadt=dthetadt)
 
             if imicrophys == 2:
-                ncnew, nrnew = prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx, dthetadt=dthetadt)
+                ncnew, nrnew = prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx,nx_p, dthetadt=dthetadt)
             
         #
         # *** Exercise 4.1 / 5.1 moisture scalars ***
@@ -759,7 +765,7 @@ if __name__ == "__main__":
         #
 
         # *** edit here ***
-        unew = prog_velocity(uold, unow, mtg, dtdx, dthetadt = dthetadt)
+        unew = prog_velocity(uold, unow, mtg, dtdx,nx_p, dthetadt = dthetadt)
         #
         # *** Exercise 2.1 velocity ***
         # print("mtg:  ", mtg[5,5])
@@ -776,18 +782,18 @@ if __name__ == "__main__":
         # exchange boundaries if periodic
         # -------------------------------------------------------------------------
         if irelax == 0:
-            snew = periodic(snew, nx, nb)
-            unew = periodic(unew, nx, nb)
+            snew = periodic(snew, nx_p, nb)
+            unew = periodic(unew, nx_p, nb)
 
             if imoist == 1:
-                qvnew = periodic(qvnew, nx, nb)
-                qcnew = periodic(qcnew, nx, nb)
-                qrnew = periodic(qrnew, nx, nb)
+                qvnew = periodic(qvnew, nx_p, nb)
+                qcnew = periodic(qcnew, nx_p, nb)
+                qrnew = periodic(qrnew, nx_p, nb)
 
             # 2-moment scheme
             if imoist == 1 and imicrophys == 2:
-                ncnew = periodic(ncnew, nx, nb)
-                nrnew = periodic(nrnew, nx, nb)
+                ncnew = periodic(ncnew, nx_p, nb)
+                nrnew = periodic(nrnew, nx_p, nb)
 
         # relaxation of prognostic fields
         # -------------------------------------------------------------------------
@@ -795,40 +801,40 @@ if __name__ == "__main__":
             if (rank == 0) | (rank == rank_size-1): 
                 if idbg == 1:
                     print("Relaxing prognostic fields ...\n")
-                snew = relax(snew, nx, nb, sbnd1, sbnd2)
-                unew = relax(unew, nx1, nb, ubnd1, ubnd2)
+                snew = relax(snew, nx_p, nb, sbnd1, sbnd2)
+                unew = relax(unew, nx1_p, nb, ubnd1, ubnd2)
                 if imoist == 1:
 
-                    qvnew = relax(qvnew, nx, nb, qvbnd1, qvbnd2)
-                    qcnew = relax(qcnew, nx, nb, qcbnd1, qcbnd2)
-                    qrnew = relax(qrnew, nx, nb, qrbnd1, qrbnd2)
+                    qvnew = relax(qvnew, nx_p, nb, qvbnd1, qvbnd2)
+                    qcnew = relax(qcnew, nx_p, nb, qcbnd1, qcbnd2)
+                    qrnew = relax(qrnew, nx_p, nb, qrbnd1, qrbnd2)
 
                 # 2-moment scheme
                 if imoist == 1 and imicrophys == 2:
-                    ncnew = relax(ncnew, nx, nb, ncbnd1, ncbnd2)
-                    nrnew = relax(nrnew, nx, nb, nrbnd1, nrbnd2)
+                    ncnew = relax(ncnew, nx_p, nb, ncbnd1, ncbnd2)
+                    nrnew = relax(nrnew, nx_p, nb, nrbnd1, nrbnd2)
 
-        # Diffusion and gravity wave absorber
+        # Diffusion and gravity wave absorber - alte position
         # ------------------------------------
 
-        if imoist == 0:
-            [unew, snew] = horizontal_diffusion(tau, unew, snew)
-        else:
-            if imicrophys == 2:
-                [unew, snew, qvnew, qcnew, qrnew, ncnew, nrnew] = horizontal_diffusion(
-                    tau,
-                    unew,
-                    snew,
-                    qvnew=qvnew,
-                    qcnew=qcnew,
-                    qrnew=qrnew,
-                    ncnew=ncnew,
-                    nrnew=nrnew,
-                )
-            else:
-                [unew, snew, qvnew, qcnew, qrnew] = horizontal_diffusion(
-                    tau, unew, snew, qvnew=qvnew, qcnew=qcnew, qrnew=qrnew
-                )
+        # if imoist == 0:
+        #     [unew, snew] = horizontal_diffusion(tau, unew, snew)
+        # else:
+        #     if imicrophys == 2:
+        #         [unew, snew, qvnew, qcnew, qrnew, ncnew, nrnew] = horizontal_diffusion(
+        #             tau,
+        #             unew,
+        #             snew,
+        #             qvnew=qvnew,
+        #             qcnew=qcnew,
+        #             qrnew=qrnew,
+        #             ncnew=ncnew,
+        #             nrnew=nrnew,
+        #         )
+        #     else:
+        #         [unew, snew, qvnew, qcnew, qrnew] = horizontal_diffusion(
+        #             tau, unew, snew, qvnew=qvnew, qcnew=qcnew, qrnew=qrnew
+        #         )
 
         # *** Exercise 2.2 Diagnostic computation of pressure ***
         # *** Diagnostic computation of pressure ***
@@ -921,14 +927,14 @@ if __name__ == "__main__":
                 # periodic lateral boundary conditions
                 # ----------------------------
                 if irelax == 0:
-                    dthetadt = periodic(dthetadt, nx, nb)
+                    dthetadt = periodic(dthetadt, nx_p, nb)
                 else:
                     # Relax latent heat fields
                     # ----------------------------
                     if (rank == 0) | (rank == rank_size-1):
-                        dthetadt = relax(dthetadt, nx, nb, dthetadtbnd1, dthetadtbnd2)
+                        dthetadt = relax(dthetadt, nx_p, nb, dthetadtbnd1, dthetadtbnd2)
             else:
-                dthetadt = np.zeros((nxb, nz1))
+                dthetadt = np.zeros((nxb_p, nz1))
 
         if idbg == 1:
             print("Preparing next time step ...\n")
@@ -942,21 +948,9 @@ if __name__ == "__main__":
         # print("unow: ",unow[1,1])
         # print("unew: ",unew[1,1])
         # print()
-        if imicrophys == 2:
-            ncold = ncnow
-            ncnow = ncnew
 
-            nrold = nrnow
-            nrnow = nrnew
 
-        qvold = qvnow
-        qvnow = qvnew
 
-        qcold = qcnow
-        qcnow = qcnew
-
-        qrold = qrnow
-        qrnow = qrnew
 
         sold = snow
         snow = snew
@@ -964,15 +958,47 @@ if __name__ == "__main__":
         uold = unow
         unow = unew
 
+
         if imoist == 1:
             if idbg == 1:
                 print("exchange moisture variables")
+            qvold = qvnow
+            qvnow = qvnew
+
+            qcold = qcnow
+            qcnow = qcnew
+
+            qrold = qrnow
+            qrnow = qrnew
 
             if imicrophys == 2:
                 if idbg == 1:
                     print("exchange number densitiy variables")
+                ncold = ncnow
+                ncnow = ncnew
 
-        #
+                nrold = nrnow
+                nrnow = nrnew
+
+        ### apply horizontal diffusion
+        if imoist == 0:
+            [unew, snew] = horizontal_diffusion(tau, unew, snew)
+        else:
+            if imicrophys == 2:
+                [unew, snew, qvnew, qcnew, qrnew, ncnew, nrnew] = horizontal_diffusion(
+                    tau,
+                    unew,
+                    snew,
+                    qvnew=qvnew,
+                    qcnew=qcnew,
+                    qrnew=qrnew,
+                    ncnew=ncnew,
+                    nrnew=nrnew,
+                )
+            else:
+                [unew, snew, qvnew, qcnew, qrnew] = horizontal_diffusion(
+                    tau, unew, snew, qvnew=qvnew, qcnew=qcnew, qrnew=qrnew
+                )
         # *** Exercise 2.1 / 4.1 / 5.1 ***
 
         # check maximum cfl criterion
