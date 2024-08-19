@@ -739,7 +739,7 @@ if __name__ == "__main__":
         ### every rank calculates its on x dimension
 
 
-        
+        print("yeeee, bis da h häds klappt")
         snew = prog_isendens(sold, snow, unow, dtdx,nx_p, dthetadt = dthetadt)
         #
         # *** Exercise 2.1 isentropic mass density ***
