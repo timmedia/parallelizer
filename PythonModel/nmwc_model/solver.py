@@ -359,7 +359,7 @@ if __name__ == "__main__":
 
         # relax topography
         if (rank == 0) | (rank == rank_size-1):
-            topo_g = relax(topo_g, nx, nb, tbnd1, tbnd2)
+            topo_g = relax(topo_g, nx, nb, tbnd1, tbnd2, rank, rank_size)
     else:
         if idbg == 1:
             print("Periodic topography ...\n")
@@ -540,7 +540,7 @@ if __name__ == "__main__":
     counts_hs = [(nx_hs//rank_size+2)*nz] +[(nx_hs//rank_size+ int(np.ceil(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size)*nz] * (rank_size - 4) +[(nx_hs//rank_size+int(np.floor(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size +2)*nz]
     displacements_hs = [sum(counts_hs[:i]) for i in range(rank_size)]
 
-    nx_p = counts_un[rank]//nz
+    nx_p = counts_un[rank]//nz-3
     nx1_p = nx_p + 1
     nxb_p = nx_p + 2*nb
     
@@ -551,13 +551,14 @@ if __name__ == "__main__":
     uold = np.empty((counts_hs[rank]//nz,nz), dtype=np.float64)
     unow = np.empty((counts_hs[rank]//nz,nz), dtype=np.float64)
     unew = np.empty((counts_hs[rank]//nz,nz), dtype=np.float64)
-    dthetadt = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
     mtg = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
     prs = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
     topo = np.empty((counts_un_1D[rank],1), dtype=np.float64)
     zhtold = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
     zhtnow = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
     exn = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    if idthdt == 1:
+        dthetadt = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
     if imoist == 1:
         qvold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
         qcold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
@@ -569,8 +570,8 @@ if __name__ == "__main__":
         qcnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
         qrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
         lheat = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
-        prec = np.empty((counts_un_1D[rank],1), dtype=np.float64)
-        tot_prec = np.empty((counts_un_1D[rank],1), dtype=np.float64)
+        prec = np.empty((counts_un_1D[rank],), dtype=np.float64)
+        tot_prec = np.empty((counts_un_1D[rank],), dtype=np.float64)
         if imicrophys == 2:
             ncold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
             nrold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
@@ -636,16 +637,22 @@ if __name__ == "__main__":
                 sold_g = np.insert(sold_g, x_loc//nz,sold_g[x_loc//nz-nb:x_loc//nz], axis=0)
                 snow_g = np.insert(snow_g, x_loc//nz,snow_g[x_loc//nz-nb:x_loc//nz], axis=0)
                 # snew_g = np.insert(snew_g, x_loc//nz,snew_g[i//nz-nb:i//nz], axis=0)
-                uold_g = np.insert(uold_g, (x_loc + 1)//nz,uold_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
-                unow_g = np.insert(unow_g, (x_loc + 1)//nz,unow_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
-                # unew_g = np.insert(unew_g, (x_loc + 1)//nz,unew_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
-                dthetadt_g = np.insert(dthetadt_g, x_loc//(nz+1),dthetadt_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
                 mtg_g = np.insert(mtg_g, x_loc//nz,mtg_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                topo_g = np.insert(topo_g, x_loc//nz,topo_g[x_loc//nz-nb:x_loc//nz], axis=0)
+
+            for x_loc in displacements_vs:
                 prs_g = np.insert(prs_g, x_loc//(nz+1),prs_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
-                topo_g = np.insert(topo_g, x_loc//1,topo_g[x_loc//nz-nb:x_loc//1], axis=0)
                 zhtold_g = np.insert(zhtold_g, x_loc//(nz+1),zhtold_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
                 zhtnow_g = np.insert(zhtnow_g, x_loc//(nz+1),zhtnow_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
                 # exn_g = np.insert(exn_g, x_loc//(nz+1),exn_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+
+            for x_loc in displacements_hs:
+                uold_g = np.insert(uold_g, x_loc//nz+1,uold_g[x_loc//nz + 1 -(nb+1):(x_loc + 1)//nz], axis=0)
+                unow_g = np.insert(unow_g, x_loc//nz+1,unow_g[x_loc//nz + 1-(nb+1):(x_loc + 1)//nz], axis=0)
+                # unew_g = np.insert(unew_g, (x_loc + 1)//nz,unew_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
+            if idthdt == 1:
+                for x_loc in displacements_vs:
+                    dthetadt_g = np.insert(dthetadt_g, x_loc//(nz+1),dthetadt_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
             if imoist == 1:
                 for x_loc in displacements_un:
                     qvold_g = np.insert(qvold_g, x_loc//nz,qvold_g[x_loc//nz-nb:x_loc//nz], axis=0)
@@ -657,8 +664,8 @@ if __name__ == "__main__":
                     # qvnew_g = np.insert(qvnew_g, x_loc//nz,qvnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
                     # qcnew_g = np.insert(qcnew_g, x_loc//nz,qcnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
                     # qrnew_g = np.insert(qrnew_g, x_loc//nz,qrnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
-                    prec_g = np.insert(prec_g, x_loc//1,prec_g[x_loc//nz-nb:x_loc//1], axis=0)
-                    tot_prec_g = np.insert(tot_prec_g, x_loc//1,tot_prec_g[x_loc//nz-nb:x_loc//1], axis=0)
+                    prec_g = np.insert(prec_g, x_loc//nz,prec_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    tot_prec_g = np.insert(tot_prec_g, x_loc//nz,tot_prec_g[x_loc//nz-nb:x_loc//nz], axis=0)
             if (imoist == 1)&(imicrophys == 2):
                 for x_loc in displacements_un:
                     ncold_g = np.insert(ncold_g, x_loc//nz,ncold_g[x_loc//nz-nb:x_loc//nz], axis=0)
@@ -674,13 +681,14 @@ if __name__ == "__main__":
             uold_g = None
             unow_g = None
             # unew_g = None
-            dthetadt_g = None
             mtg_g = None
             prs_g = None
             topo_g = None
             zhtold_g = None
             zhtnow_g = None
             # exn_g = None
+            if idthdt == 1:
+                dthetadt_g = None
             if imoist == 1:
                 qvold_g = None
                 qcold_g = None
@@ -708,13 +716,14 @@ if __name__ == "__main__":
         comm.Scatterv([uold_g,counts_hs,displacements_hs,MPI.DOUBLE], uold, root=0)
         comm.Scatterv([unow_g,counts_hs,displacements_hs,MPI.DOUBLE], unow, root=0)
         # comm.Scatterv([unew_g,counts_hs,displacements_hs,MPI.DOUBLE], unew, root=0)
-        comm.Scatterv([dthetadt_g,counts_vs,displacements_vs,MPI.DOUBLE], dthetadt, root=0)
         comm.Scatterv([mtg_g,counts_un,displacements_un,MPI.DOUBLE], mtg, root=0)
         comm.Scatterv([prs_g,counts_vs,displacements_vs,MPI.DOUBLE], prs, root=0)
         comm.Scatterv([topo_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], topo, root=0)
         comm.Scatterv([zhtold_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtold, root=0)
         comm.Scatterv([zhtnow_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtnow, root=0)
         # comm.Scatterv([exn_g,counts_vs,displacements_vs,MPI.DOUBLE], exn, root=0)
+        if idthdt == 1:
+            comm.Scatterv([dthetadt_g,counts_vs,displacements_vs,MPI.DOUBLE], dthetadt, root=0)
         if imoist == 1:
             comm.Scatterv([qvold_g,counts_un,displacements_un,MPI.DOUBLE], qvold, root=0)
             comm.Scatterv([qcold_g,counts_un,displacements_un,MPI.DOUBLE], qcold, root=0)
@@ -739,8 +748,10 @@ if __name__ == "__main__":
         ### every rank calculates its on x dimension
 
 
-        print("yeeee, bis da h häds klappt")
+        print("hoi ich bin de rank " + str(rank) +" und ich säge yeeee, bis da h häds klappt")
+
         snew = prog_isendens(sold, snow, unow, dtdx,nx_p, dthetadt = dthetadt)
+
         #
         # *** Exercise 2.1 isentropic mass density ***
 
@@ -801,18 +812,18 @@ if __name__ == "__main__":
             if (rank == 0) | (rank == rank_size-1): 
                 if idbg == 1:
                     print("Relaxing prognostic fields ...\n")
-                snew = relax(snew, nx_p, nb, sbnd1, sbnd2)
-                unew = relax(unew, nx1_p, nb, ubnd1, ubnd2)
+                snew = relax(snew, nx_p, nb, sbnd1, sbnd2, rank, rank_size)
+                unew = relax(unew, nx1_p, nb, ubnd1, ubnd2, rank, rank_size)
                 if imoist == 1:
 
-                    qvnew = relax(qvnew, nx_p, nb, qvbnd1, qvbnd2)
-                    qcnew = relax(qcnew, nx_p, nb, qcbnd1, qcbnd2)
-                    qrnew = relax(qrnew, nx_p, nb, qrbnd1, qrbnd2)
+                    qvnew = relax(qvnew, nx_p, nb, qvbnd1, qvbnd2, rank, rank_size)
+                    qcnew = relax(qcnew, nx_p, nb, qcbnd1, qcbnd2, rank, rank_size)
+                    qrnew = relax(qrnew, nx_p, nb, qrbnd1, qrbnd2, rank, rank_size)
 
                 # 2-moment scheme
                 if imoist == 1 and imicrophys == 2:
-                    ncnew = relax(ncnew, nx_p, nb, ncbnd1, ncbnd2)
-                    nrnew = relax(nrnew, nx_p, nb, nrbnd1, nrbnd2)
+                    ncnew = relax(ncnew, nx_p, nb, ncbnd1, ncbnd2, rank, rank_size)
+                    nrnew = relax(nrnew, nx_p, nb, nrbnd1, nrbnd2, rank, rank_size)
 
         # Diffusion and gravity wave absorber - alte position
         # ------------------------------------
@@ -932,7 +943,7 @@ if __name__ == "__main__":
                     # Relax latent heat fields
                     # ----------------------------
                     if (rank == 0) | (rank == rank_size-1):
-                        dthetadt = relax(dthetadt, nx_p, nb, dthetadtbnd1, dthetadtbnd2)
+                        dthetadt = relax(dthetadt, nx_p, nb, dthetadtbnd1, dthetadtbnd2, rank, rank_size)
             else:
                 dthetadt = np.zeros((nxb_p, nz1))
 

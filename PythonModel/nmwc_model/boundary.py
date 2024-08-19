@@ -37,7 +37,7 @@ def periodic(phi, nx, nb):
     return phi
 
 
-def relax(phi, nx, nb, phi1, phi2):
+def relax(phi, nx, nb, phi1, phi2, rank, rank_size):
     """ Relaxation of boundary conditions.
 
     Based on relax.m from the full isentropic model in MATLAB, 2014.
