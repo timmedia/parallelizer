@@ -519,10 +519,58 @@ if __name__ == "__main__":
                     DTHETADT=DTHETADT,
                 )
 
-    def prepare_scatter_unstagered(global_field,nb,nz,nx):
-        for j,i in enumerate(range(nx//rank_size,nx,nx//rank_size)):
-            global_field = np.insert(global_field, i+nb*(j+1), global_field[i+nb*(j):i+nb*(j+1)], axis=0)
-        return global_field
+
+    #horizonntally unstagered and vertically unstaggered
+    nx_un = nx+(rank_size-1)*nb
+    counts_un = [(nx_un//rank_size+2)*nz] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size)*nz] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size +2)*nz]
+    displacements_un = [sum(counts_un[:i]) for i in range(0,rank_size)]
+
+    #horizonntally unstagered and vertically 1D
+    counts_un_1D = [(nx_un//rank_size+2)*1] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size)*1] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size +2)*1]
+    displacements_un_1D = [sum(counts_un_1D[:i]) for i in range(rank_size)]
+
+    #horizonntally unstagered and vertically staggered
+    counts_vs = [(nx_un//rank_size+2)*(nz+1)] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size)*(nz+1)] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size +2)*(nz+1)]
+    displacements_vs = [sum(counts_vs[:i]) for i in range(rank_size)]
+
+    #horizonntally stagered and vertically unstaggered
+    nx_hs = (nx+1)+(rank_size-1)*(nb+1)
+    counts_hs = [(nx_hs//rank_size+2)*nz] +[(nx_hs//rank_size+ int(np.ceil(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size)*nz] * (rank_size - 4) +[(nx_hs//rank_size+int(np.floor(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size +2)*nz]
+    displacements_hs = [sum(counts_hs[:i]) for i in range(rank_size)]
+
+    sold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+    snow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+    snew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+    uold = np.empty((counts_hs[rank]//nz,nz), dtype=np.float64)
+    unow = np.empty((counts_hs[rank]//nz,nz), dtype=np.float64)
+    unew = np.empty((counts_hs[rank]//nz,nz), dtype=np.float64)
+    dthetadt = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    mtg = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+    prs = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    topo = np.empty((counts_un_1D[rank],1), dtype=np.float64)
+    zhtold = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    zhtnow = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    exn = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    if imoist == 1:
+        qvold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qcold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qrold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qvnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qcnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qrnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qvnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qcnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        lheat = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+        prec = np.empty((counts_un_1D[rank],1), dtype=np.float64)
+        tot_prec = np.empty((counts_un_1D[rank],1), dtype=np.float64)
+        if imicrophys == 2:
+            ncold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            nrold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            ncnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            nrnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            ncnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            nrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
     
     # ########## TIME LOOP #######################################################
     # ----------------------------------------------------------------------------
@@ -575,94 +623,85 @@ if __name__ == "__main__":
         # print()
 
         ####################################scattering
-x = 24
-z = 6
-nb = 2
-num_elements = x * z
-x_p = x+(size-1)*nb
-counts = [(x_p//size+2)*z] +[(x_p//size+ int(np.ceil(x_p%size/2)))*z]+ [(x_p//size)*z] * (size - 4) +[(x_p//size+int(np.floor(x_p%size/2)))*z]+ [(x_p//size +2)*z]
-        
-        #horizonntally unstagered and vertically unstaggered
-        nx_un = nx+(rank_size-1)*nb
-        counts_un = [(nx_un//rank_size+2)*nz] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size)*nz] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size +2)*nz]
-        displacements_un = [sum(counts[:i]) for i in range(0,rank_size)]
 
-        #horizonntally unstagered and vertically 1D
-        counts_un_1D = [(nx_un//rank_size+2)*1] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size)*1] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size +2)*1]
-        displacements_un_1D = [sum(counts_un_1D[:i]) for i in range(rank_size)]
 
-        #horizonntally unstagered and vertically staggered
-        counts_vs = [(nx_un//rank_size+2)*(nz+1)] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size)*(nz+1)] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size +2)*(nz+1)]
-        displacements_vs = [sum(counts_vs[:i]) for i in range(rank_size)]
-
-        sold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-        snow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-        snew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-        uold = np.empty((nx // rank_size,nz), dtype=np.float64)
-        unow = np.empty((nx // rank_size,nz), dtype=np.float64)
-        unow = np.empty((nx // rank_size,nz), dtype=np.float64)
-        dthetadt = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
-        mtg = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-        prs = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
-        topo = np.empty((counts_un_1D[rank],1), dtype=np.float64)
-        zhtold = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
-        zhtnow = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
-        exn = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    if rank == 0:
+        for x_loc in displacements_un:
+            sold_g = np.insert(sold_g, x_loc//nz,sold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+            snow_g = np.insert(snow_g, x_loc//nz,snow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+            # snew_g = np.insert(snew_g, x_loc//nz,snew_g[i//nz-nb:i//nz], axis=0)
+            uold_g = np.insert(uold_g, (x_loc + 1)//nz,uold_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
+            unow_g = np.insert(unow_g, (x_loc + 1)//nz,unow_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
+            # unew_g = np.insert(unew_g, (x_loc + 1)//nz,unew_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
+            dthetadt_g = np.insert(dthetadt_g, x_loc//(nz+1),dthetadt_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+            mtg_g = np.insert(mtg_g, x_loc//nz,mtg_g[x_loc//nz-nb:x_loc//nz], axis=0)
+            prs_g = np.insert(prs_g, x_loc//(nz+1),prs_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+            topo_g = np.insert(topo_g, x_loc//1,topo_g[x_loc//nz-nb:x_loc//1], axis=0)
+            zhtold_g = np.insert(zhtold_g, x_loc//(nz+1),zhtold_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+            zhtnow_g = np.insert(zhtnow_g, x_loc//(nz+1),zhtnow_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+            # exn_g = np.insert(exn_g, x_loc//(nz+1),exn_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
         if imoist == 1:
-            qvold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-            qcold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-            qrold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-            qvnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-            qcnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-            qrnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-            qvnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-            qcnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-            qrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-            lheat = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
-            prec = np.empty((counts_un_1D[rank],1), dtype=np.float64)
-            tot_prec = np.empty((counts_un_1D[rank],1), dtype=np.float64)
-            if imicrophys == 2:
-                ncold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-                nrold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-                ncnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-                nrnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-                ncnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-                nrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
-
-x = 24
-z = 6
-nb = 2
-num_elements = x * z
-x_p = x+(size-1)*nb
-counts = [(x_p//size+2)*z] +[(x_p//size+ int(np.ceil(x_p%size/2)))*z]+ [(x_p//size)*z] * (size - 4) +[(x_p//size+int(np.floor(x_p%size/2)))*z]+ [(x_p//size +2)*z]
-displacements = [sum(counts[:i]) for i in range(0,size)]
-if rank == 0:
-    global_a = np.arange(num_elements).reshape(x, z).astype(np.float64)
-    global_a = np.insert(global_a, 0, np.zeros((2,z), dtype=np.float64), axis=0)
-    global_a = np.insert(global_a, x+2, np.zeros((2,z), dtype=np.float64), axis=0)
-    for j,i in enumerate(displacements[1:]):
-        print(global_a[i//z])
-        global_a = np.insert(global_a, i//z, global_a[i//z-nb:i//z], axis=0)
-        print(i//z)
-else:
-    global_a = None
-print(global_a)
-# x_p = x+(size-1)*nb+4
-# counts = [(x_p//size + int(np.ceil(x_p%size/2)))*z] + [(x_p//size)*z] * (size - 2) + [(x_p//size + int(np.floor(x_p%size/2)))*z]
-print(counts)
-# a = np.empty((x // size+nb,z), dtype=np.float64)
-a = np.empty((counts[rank]//z,z), dtype=np.float64)
-# recvbuf = np.empty((counts[rank] // 6, 6), dtype=np.int)
-comm.Scatterv([global_a,counts,displacements,MPI.DOUBLE], a, root=0)
-
-
-
-print("Rank {} has a = {}".format(rank, a))
+            for x_loc in displacements_un:
+                qvold_g = np.insert(qvold_g, x_loc//nz,qvold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                qcold_g = np.insert(qcold_g, x_loc//nz,qcold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                qrold_g = np.insert(qrold_g, x_loc//nz,qrold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                qvnow_g = np.insert(qvnow_g, x_loc//nz,qvnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                qcnow_g = np.insert(qcnow_g, x_loc//nz,qcnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                qrnow_g = np.insert(qrnow_g, x_loc//nz,qrnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                # qvnew_g = np.insert(qvnew_g, x_loc//nz,qvnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                # qcnew_g = np.insert(qcnew_g, x_loc//nz,qcnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                # qrnew_g = np.insert(qrnew_g, x_loc//nz,qrnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                prec_g = np.insert(prec_g, x_loc//1,prec_g[x_loc//nz-nb:x_loc//1], axis=0)
+                tot_prec_g = np.insert(tot_prec_g, x_loc//1,tot_prec_g[x_loc//nz-nb:x_loc//1], axis=0)
+        if (imoist == 1)&(imicrophys == 2):
+            for x_loc in displacements_un:
+                ncold_g = np.insert(ncold_g, x_loc//nz,ncold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                nrold_g = np.insert(nrold_g, x_loc//nz,nrold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                ncnow_g = np.insert(ncnow_g, x_loc//nz,ncnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                nrnow_g = np.insert(nrnow_g, x_loc//nz,nrnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                # ncnew_g = np.insert(ncnew_g, x_loc//nz,ncnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                # nrnew_g = np.insert(nrnew_g, x_loc//nz,nrnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+    else:
+        sold_g = None
+        snow_g = None
+        # snew_g = None
+        uold_g = None
+        unow_g = None
+        # unew_g = None
+        dthetadt_g = None
+        mtg_g = None
+        prs_g = None
+        topo_g = None
+        zhtold_g = None
+        zhtnow_g = None
+        # exn_g = None
+        if imoist == 1:
+            qvold_g = None
+            qcold_g = None
+            qrold_g = None
+            qvnow_g = None
+            qcnow_g = None
+            qrnow_g = None
+            # qvnew_g = None
+            # qcnew_g = None
+            # qrnew_g = None
+            prec_g = None
+            tot_prec_g = None
+        if (imoist == 1)&(imicrophys == 2):
+            ncold_g = None
+            nrold_g = None
+            ncnow_g = None
+            nrnow_g = None
+            # ncnew_g = None
+            # nrnew_g = None
 
 
     comm.Scatterv([sold_g,counts_un,displacements_un,MPI.DOUBLE], sold, root=0)
     comm.Scatterv([snow_g,counts_un,displacements_un,MPI.DOUBLE], snow, root=0)
     # comm.Scatterv([snew_g,counts_un,displacements_un,MPI.DOUBLE], snew, root=0)
+    comm.Scatterv([uold_g,counts_hs,displacements_hs,MPI.DOUBLE], uold, root=0)
+    comm.Scatterv([unow_g,counts_hs,displacements_hs,MPI.DOUBLE], unow, root=0)
+    # comm.Scatterv([unew_g,counts_hs,displacements_hs,MPI.DOUBLE], unew, root=0)
     comm.Scatterv([dthetadt_g,counts_vs,displacements_vs,MPI.DOUBLE], dthetadt, root=0)
     comm.Scatterv([mtg_g,counts_un,displacements_un,MPI.DOUBLE], mtg, root=0)
     comm.Scatterv([prs_g,counts_vs,displacements_vs,MPI.DOUBLE], prs, root=0)
