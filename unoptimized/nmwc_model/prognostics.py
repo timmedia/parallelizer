@@ -13,7 +13,7 @@ from nmwc_model.namelist import (
 )  # global variables
 
 
-def prog_isendens(sold, snow, unow, dtdx, dthetadt=None):
+def prog_isendens(sold, snow, unow, dtdx,nx_p, dthetadt=None):
     """ Prognostic step for the isentropic mass density.
 
     Parameters
@@ -46,7 +46,7 @@ def prog_isendens(sold, snow, unow, dtdx, dthetadt=None):
     # *** edit here ***
     #
     k = np.arange(1, nz-1)
-    i = nb + np.arange(0, nx)
+    i = nb + np.arange(0, nx_p)
 
     snew[i,:] = sold[i,:] - dtdx*(snow[i+1,:]*0.5*(unow[i+1,:] + unow[i+2,:]) - snow[i-1,:]*0.5*(unow[i-1,:] + unow[i,:]))
 
@@ -58,7 +58,7 @@ def prog_isendens(sold, snow, unow, dtdx, dthetadt=None):
     return snew
 
 
-def prog_velocity(uold, unow, mtg, dtdx, dthetadt=None):
+def prog_velocity(uold, unow, mtg, dtdx,nx_p, dthetadt=None):
     """ Prognostic step for the momentum.
 
     Parameters
@@ -90,7 +90,7 @@ def prog_velocity(uold, unow, mtg, dtdx, dthetadt=None):
     # *** time step for momentum ***
     # *** edit here ***
     #
-    i = nb + np.arange(0, nx + 1)
+    i = nb + np.arange(0, nx_p + 1)
     k = np.arange(1, nz-1)
 
     unew[i,:] = uold[i,:] - unow[i,:]*dtdx*(unow[i+1,:] - unow[i-1,:]) - 2*dtdx*(mtg[i,:] - mtg[i-1,:])
@@ -104,7 +104,7 @@ def prog_velocity(uold, unow, mtg, dtdx, dthetadt=None):
     return unew
 
 
-def prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx, dthetadt=None):
+def prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx,nx_p, dthetadt=None):
     """ Prognostic step for the hydrometeors.
 
     Parameters
@@ -150,7 +150,7 @@ def prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx, dthetadt
     # *** Exercise 4.1/5.2 moisture advection ***
     # *** edit here ***
     #
-    i = nb + np.arange(0, nx)
+    i = nb + np.arange(0, nx_p)
     k = np.arange(1, nz-1)
     qvnew[i,:] = qvold[i,:] - (unow[i+1,:] + unow[i,:])/2*dtdx*(qvnow[i+1,:]-qvnow[i-1,:])
 
@@ -170,7 +170,7 @@ def prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx, dthetadt
     return qvnew, qcnew, qrnew
 
 
-def prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx, dthetadt=None):
+def prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx,nx_p, dthetadt=None):
     """ Prognostic step for the number densities.
 
     Parameters
@@ -209,7 +209,7 @@ def prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx, dthetadt=None):
     # *** Exercise 5.1/5.2 number densities ***
     # *** edit here ***
     k = np.arange(1, nz-1)
-    i = nb + np.arange(0, nx)
+    i = nb + np.arange(0, nx_p)
     ncnew[i,:] = ncold[i,:] - (unow[i+1,:] + unow[i,:])/2*dtdx*(ncnow[i+1,:]-ncnow[i-1,:])
 
     nrnew[i,:] = nrold[i,:] - (unow[i+1,:] + unow[i,:])/2*dtdx*(nrnow[i+1,:]-nrnow[i-1,:])

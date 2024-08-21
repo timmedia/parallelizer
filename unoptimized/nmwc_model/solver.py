@@ -77,6 +77,13 @@ from nmwc_model.namelist import (
     itime,
 )
 
+#import mpi4py
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+rank_size = comm.Get_size()
+
 
 if __name__ == "__main__":
     # Print the full precision
@@ -91,81 +98,81 @@ if __name__ == "__main__":
     # -------------------------
 
     # topography
-    topo = np.zeros((nxb, 1))
+    topo_g = np.zeros((nxb, 1))
 
     # height in z-coordinates
-    zhtold = np.zeros((nxb, nz1))
-    zhtnow = np.zeros_like(zhtold)
+    zhtold_g = np.zeros((nxb, nz1))
+    zhtnow_g = np.zeros_like(zhtold_g)
     Z = np.zeros((nout, nz1, nx))  # auxilary field for output
 
     # horizontal velocity
-    uold = np.zeros((nxb1, nz))
-    unow = np.zeros_like(uold)
-    unew = np.zeros_like(uold)
+    uold_g = np.zeros((nxb1, nz))
+    unow_g = np.zeros_like(uold_g)
+    unew_g = np.zeros_like(uold_g)
     U = np.zeros((nout, nz, nx))  # auxilary field for output
 
     # isentropic density
-    sold = np.zeros((nxb, nz))
-    snow = np.zeros_like(sold)
-    snew = np.zeros_like(sold)
+    sold_g = np.zeros((nxb, nz))
+    snow_g = np.zeros_like(sold_g)
+    snew_g = np.zeros_like(sold_g)
     S = np.zeros((nout, nz, nx))  # auxilary field for output
 
     # Montgomery potential
-    mtg = np.zeros((nxb, nz))
-    mtgnew = np.zeros_like(mtg)
+    mtg_g = np.zeros((nxb, nz))
+    mtgnew_g = np.zeros_like(mtg_g)
 
     # Exner function
-    exn = np.zeros((nxb, nz1))
+    exn_g = np.zeros((nxb, nz1))
 
     # pressure
-    prs = np.zeros((nxb, nz1))
+    prs_g = np.zeros((nxb, nz1))
 
     # output time vector
     T = np.arange(1, nout + 1)
 
     if imoist == 1:
         # precipitation
-        prec = np.zeros(nxb)
+        prec_g = np.zeros(nxb)
         PREC = np.zeros((nout, nx))  #  auxiliary field for output
 
         # accumulated precipitation
-        tot_prec = np.zeros(nxb)
+        tot_prec_g = np.zeros(nxb)
         TOT_PREC = np.zeros((nout, nx))  #  auxiliary field for output
 
         # specific humidity
-        qvold = np.zeros((nxb, nz))
-        qvnow = np.zeros_like(qvold)
-        qvnew = np.zeros_like(qvold)
+        qvold_g = np.zeros((nxb, nz))
+        qvnow_g = np.zeros_like(qvold_g)
+        qvnew_g = np.zeros_like(qvold_g)
         QV = np.zeros((nout, nz, nx))  # auxiliary field for output
 
         # specific cloud water content
-        qcold = np.zeros((nxb, nz))
-        qcnow = np.zeros_like(qcold)
-        qcnew = np.zeros_like(qcold)
+        qcold_g = np.zeros((nxb, nz))
+        qcnow_g = np.zeros_like(qcold_g)
+        qcnew_g = np.zeros_like(qcold_g)
         QC = np.zeros((nout, nz, nx))  # auxiliary field for output
 
         # specific rain water content
-        qrold = np.zeros((nxb, nz))
-        qrnow = np.zeros_like(qrold)
-        qrnew = np.zeros_like(qrold)
+        qrold_g = np.zeros((nxb, nz))
+        qrnow_g = np.zeros_like(qrold_g)
+        qrnew_g = np.zeros_like(qrold_g)
         QR = np.zeros((nout, nz, nx))  # auxiliary field for output
 
         if imicrophys == 2:
             # cloud droplet number density
-            ncold = np.zeros((nxb, nz))
-            ncnow = np.zeros_like(ncold)
-            ncnew = np.zeros_like(ncold)
+            ncold_g = np.zeros((nxb, nz))
+            ncnow_g = np.zeros_like(ncold_g)
+            ncnew_g = np.zeros_like(ncold_g)
             NC = np.zeros((nout, nz, nx))  # auxiliary field for output
 
             # rain-droplet number density
-            nrold = np.zeros((nxb, nz))
-            nrnow = np.zeros_like(nrold)
-            nrnew = np.zeros_like(nrold)
+            nrold_g = np.zeros((nxb, nz))
+            nrnow_g = np.zeros_like(nrold_g)
+            nrnew_g = np.zeros_like(nrold_g)
             NR = np.zeros((nout, nz, nx))  # auxiliary field for output
 
         if idthdt == 1:
             # latent heating
-            dthetadt = np.zeros((nxb, nz1))
+            dthetadt_g = np.zeros((nxb, nz1))
             DTHETADT = np.zeros((nout, nz, nx))  # auxiliary field for output
 
     # Define fields at lateral boundaries
@@ -218,8 +225,8 @@ if __name__ == "__main__":
 
     if imoist == 0:
         # Dry atmosphere
-        th0, exn0, prs0, z0, mtg0, s0, u0, sold, snow, uold, unow, mtg, mtgnew = makeprofile(
-            sold, uold, mtg, mtgnew
+        th0, exn0, prs0, z0, mtg0, s0, u0, sold_g, snow_g, uold_g, unow_g, mtg_g, mtgnew_g = makeprofile(
+            sold_g, uold_g, mtg_g, mtgnew_g
         )
     else:
         if imicrophys == 0 or imicrophys == 1:
@@ -232,30 +239,30 @@ if __name__ == "__main__":
                 mtg0,
                 s0,
                 u0,
-                sold,
-                snow,
-                uold,
-                unow,
-                mtg,
-                mtgnew,
+                sold_g,
+                snow_g,
+                uold_g,
+                unow_g,
+                mtg_g,
+                mtgnew_g,
                 qv0,
                 qc0,
                 qr0,
-                qvold,
-                qvnow,
-                qcold,
-                qcnow,
-                qrold,
-                qrnow,
+                qvold_g,
+                qvnow_g,
+                qcold_g,
+                qcnow_g,
+                qrold_g,
+                qrnow_g,
             ] = makeprofile(
-                sold,
-                uold,
-                qvold=qvold,
-                qvnow=qvnow,
-                qcold=qcold,
-                qcnow=qcnow,
-                qrold=qrold,
-                qrnow=qrnow,
+                sold_g,
+                uold_g,
+                qvold=qvold_g,
+                qvnow=qvnow_g,
+                qcold=qcold_g,
+                qcnow=qcnow_g,
+                qrold=qrold_g,
+                qrnow=qrnow_g,
             )
         elif imicrophys == 2:
             # moist atmosphere with 2-moment scheme
@@ -267,38 +274,38 @@ if __name__ == "__main__":
                 mtg0,
                 s0,
                 u0,
-                sold,
-                snow,
-                uold,
-                unow,
-                mtg,
-                mtgnew,
+                sold_g,
+                snow_g,
+                uold_g,
+                unow_g,
+                mtg_g,
+                mtgnew_g,
                 qv0,
                 qc0,
                 qr0,
-                qvold,
-                qvnow,
-                qcold,
-                qcnow,
-                qrold,
-                qrnow,
-                ncold,
-                ncnow,
-                nrold,
-                nrnow,
+                qvold_g,
+                qvnow_g,
+                qcold_g,
+                qcnow_g,
+                qrold_g,
+                qrnow_g,
+                ncold_g,
+                ncnow_g,
+                nrold_g,
+                nrnow_g,
             ] = makeprofile(
-                sold,
-                uold,
-                qvold=qvold,
-                qvnow=qvnow,
-                qcold=qcold,
-                qcnow=qcnow,
-                qrold=qrold,
-                qrnow=qrnow,
-                ncold=ncold,
-                ncnow=ncnow,
-                nrold=nrold,
-                nrnow=nrnow,
+                sold_g,
+                uold_g,
+                qvold=qvold_g,
+                qvnow=qvnow_g,
+                qcold=qcold_g,
+                qcnow=qcnow_g,
+                qrold=qrold_g,
+                qrnow=qrnow_g,
+                ncold=ncold_g,
+                ncnow=ncnow_g,
+                nrold=nrold_g,
+                nrnow=nrnow_g,
             )
 
     # Save boundary values for the lateral boundary relaxation
@@ -306,39 +313,39 @@ if __name__ == "__main__":
         if idbg == 1:
             print("Saving initial lateral boundary values ...\n")
 
-        sbnd1[:] = snow[0, :]
-        sbnd2[:] = snow[-1, :]
+        sbnd1[:] = snow_g[0, :]
+        sbnd2[:] = snow_g[-1, :]
 
-        ubnd1[:] = unow[0, :]
-        ubnd2[:] = unow[-1, :]
+        ubnd1[:] = unow_g[0, :]
+        ubnd2[:] = unow_g[-1, :]
 
         if imoist == 1:
-            qvbnd1[:] = qvnow[0, :]
-            qvbnd2[:] = qvnow[-1, :]
+            qvbnd1[:] = qvnow_g[0, :]
+            qvbnd2[:] = qvnow_g[-1, :]
 
-            qcbnd1[:] = qcnow[0, :]
-            qcbnd2[:] = qcnow[-1, :]
+            qcbnd1[:] = qcnow_g[0, :]
+            qcbnd2[:] = qcnow_g[-1, :]
 
         if imicrophys != 0:
-            qrbnd1[:] = qrnow[0, :]
-            qrbnd2[:] = qrnow[-1, :]
+            qrbnd1[:] = qrnow_g[0, :]
+            qrbnd2[:] = qrnow_g[-1, :]
 
         # 2-moment microphysics scheme
         if imicrophys == 2:
             k = np.arange(0, nz)
-            ncbnd1[:] = ncnow[0, :]
-            ncbnd2[:] = ncnow[-1, :]
+            ncbnd1[:] = ncnow_g[0, :]
+            ncbnd2[:] = ncnow_g[-1, :]
 
-            nrbnd1[:] = nrnow[0, :]
-            nrbnd2[:] = nrnow[-1, :]
+            nrbnd1[:] = nrnow_g[0, :]
+            nrbnd2[:] = nrnow_g[-1, :]
 
         if idthdt == 1:
-            dthetadtbnd1[:] = dthetadt[0, :]
-            dthetadtbnd2[:] = dthetadt[-1, :]
+            dthetadtbnd1[:] = dthetadt_g[0, :]
+            dthetadtbnd2[:] = dthetadt_g[-1, :]
 
     # Make topography
     # ----------------
-    topo = maketopo(topo, nxb)
+    topo_g = maketopo(topo_g, nxb)
 
     # switch between boundary relaxation / periodic boundary conditions
     # ------------------------------------------------------------------
@@ -347,21 +354,22 @@ if __name__ == "__main__":
             print("Relax topography ...\n")
 
         # save lateral boundary values of topography
-        tbnd1 = topo[0]
-        tbnd2 = topo[-1]
+        tbnd1 = topo_g[0]
+        tbnd2 = topo_g[-1]
 
         # relax topography
-        topo = relax(topo, nx, nb, tbnd1, tbnd2)
+        if (rank == 0) | (rank == rank_size-1):
+            topo_g = relax(topo_g, nx, nb, tbnd1, tbnd2, rank, rank_size)
     else:
         if idbg == 1:
             print("Periodic topography ...\n")
 
         # make topography periodic
-        topo = periodic(topo, nx, nb)
+        topo_g = periodic(topo_g, nx, nb)
 
     # calculate geometric height (staggered)
-    zhtnow = diag_height(
-        prs0[np.newaxis, :], exn0[np.newaxis, :], zhtnow, th0, topo, 0.0
+    zhtnow_g = diag_height(
+        prs0[np.newaxis, :], exn0[np.newaxis, :], zhtnow_g, th0, topo_g, 0.0
     )
 
     # Height-dependent diffusion coefficient
@@ -379,25 +387,25 @@ if __name__ == "__main__":
     # output initial fields
     its_out = -1  # output index
     if iiniout == 1 and imoist == 0:
-        its_out, Z, U, S, T = makeoutput(unow, snow, zhtnow, its_out, 0, Z, U, S, T)
+        its_out, Z, U, S, T = makeoutput(unow_g, snow_g, zhtnow_g, its_out, 0, Z, U, S, T)
     elif iiniout == 1 and imoist == 1:
         if imicrophys == 0 or imicrophys == 1:
             if idthdt == 0:
                 [its_out, Z, U, S, T, QC, QV, QR, TOT_PREC, PREC] = makeoutput(
-                    unow,
-                    snow,
-                    zhtnow,
+                    unow_g,
+                    snow_g,
+                    zhtnow_g,
                     its_out,
                     0,
                     Z,
                     U,
                     S,
                     T,
-                    qvnow=qvnow,
-                    qcnow=qcnow,
-                    qrnow=qrnow,
-                    tot_prec=tot_prec,
-                    prec=prec,
+                    qvnow=qvnow_g,
+                    qcnow=qcnow_g,
+                    qrnow=qrnow_g,
+                    tot_prec=tot_prec_g,
+                    prec=prec_g,
                     QV=QV,
                     QC=QC,
                     QR=QR,
@@ -418,47 +426,47 @@ if __name__ == "__main__":
                     PREC,
                     DTHETADT,
                 ] = makeoutput(
-                    unow,
-                    snow,
-                    zhtnow,
+                    unow_g,
+                    snow_g,
+                    zhtnow_g,
                     its_out,
                     0,
                     Z,
                     U,
                     S,
                     T,
-                    qvnow=qvnow,
-                    qcnow=qcnow,
-                    qrnow=qrnow,
-                    tot_prec=tot_prec,
-                    prec=prec,
+                    qvnow=qvnow_g,
+                    qcnow=qcnow_g,
+                    qrnow=qrnow_g,
+                    tot_prec=tot_prec_g,
+                    prec=prec_g,
                     QV=QV,
                     QC=QC,
                     QR=QR,
                     TOT_PREC=TOT_PREC,
                     PREC=PREC,
-                    dthetadt=dthetadt,
+                    dthetadt=dthetadt_g,
                     DTHETADT=DTHETADT,
                 )
         elif imicrophys == 2:
             if idthdt == 0:
                 [its_out, Z, U, S, T, QC, QV, QR, TOT_PREC, PREC, NC, NR] = makeoutput(
-                    unow,
-                    snow,
-                    zhtnow,
+                    unow_g,
+                    snow_g,
+                    zhtnow_g,
                     its_out,
                     0,
                     Z,
                     U,
                     S,
                     T,
-                    qvnow=qvnow,
-                    qcnow=qcnow,
-                    qrnow=qrnow,
-                    tot_prec=tot_prec,
-                    prec=prec,
-                    nrnow=nrnow,
-                    ncnow=ncnow,
+                    qvnow=qvnow_g,
+                    qcnow=qcnow_g,
+                    qrnow=qrnow_g,
+                    tot_prec=tot_prec_g,
+                    prec=prec_g,
+                    nrnow=nrnow_g,
+                    ncnow=ncnow_g,
                     QV=QV,
                     QC=QC,
                     QR=QR,
@@ -483,22 +491,22 @@ if __name__ == "__main__":
                     NR,
                     DTHETADT,
                 ] = makeoutput(
-                    unow,
-                    snow,
-                    zhtnow,
+                    unow_g,
+                    snow_g,
+                    zhtnow_g,
                     its_out,
                     0,
                     Z,
                     U,
                     S,
                     T,
-                    qvnow=qvnow,
-                    qcnow=qcnow,
-                    qrnow=qrnow,
-                    tot_prec=tot_prec,
-                    prec=prec,
-                    nrnow=nrnow,
-                    ncnow=ncnow,
+                    qvnow=qvnow_g,
+                    qcnow=qcnow_g,
+                    qrnow=qrnow_g,
+                    tot_prec=tot_prec_g,
+                    prec=prec_g,
+                    nrnow=nrnow_g,
+                    ncnow=ncnow_g,
                     QV=QV,
                     QC=QC,
                     QR=QR,
@@ -506,10 +514,71 @@ if __name__ == "__main__":
                     PREC=PREC,
                     NC=NC,
                     NR=NR,
-                    dthetadt=dthetadt,
+                    dthetadt=dthetadt_g,
                     DTHETADT=DTHETADT,
                 )
 
+
+    #finding points where the fields are scattered
+
+    #horizonntally unstagered and vertically unstaggered
+    nx_un = nx+(rank_size-1)*nb
+    counts_un = [(nx_un//rank_size+2)*nz] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size)*nz] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size +2)*nz]
+    displacements_un = [sum(counts_un[:i]) for i in range(0,rank_size)]
+
+    #horizonntally unstagered and vertically 1D
+    counts_un_1D = [(nx_un//rank_size+2)*1] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size)*1] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size +2)*1]
+    displacements_un_1D = [sum(counts_un_1D[:i]) for i in range(rank_size)]
+
+    #horizonntally unstagered and vertically staggered
+    counts_vs = [(nx_un//rank_size+2)*(nz+1)] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size)*(nz+1)] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size +2)*(nz+1)]
+    displacements_vs = [sum(counts_vs[:i]) for i in range(rank_size)]
+
+    #horizonntally stagered and vertically unstaggered
+    nx_hs = (nx+1)+(rank_size-1)*(nb+1)
+    counts_hs = [(nx_hs//rank_size+2)*nz] +[(nx_hs//rank_size+ int(np.ceil(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size)*nz] * (rank_size - 4) +[(nx_hs//rank_size+int(np.floor(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size +2)*nz]
+    displacements_hs = [sum(counts_hs[:i]) for i in range(rank_size)]
+
+    nx_p = counts_un[rank]//nz-3
+    nx1_p = nx_p + 1
+    nxb_p = nx_p + 2*nb
+    
+    # gereating empty arrays for scattering
+    sold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+    snow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+    snew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+    uold = np.empty((counts_hs[rank]//nz,nz), dtype=np.float64)
+    unow = np.empty((counts_hs[rank]//nz,nz), dtype=np.float64)
+    unew = np.empty((counts_hs[rank]//nz,nz), dtype=np.float64)
+    mtg = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+    prs = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    topo = np.empty((counts_un_1D[rank],1), dtype=np.float64)
+    zhtold = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    zhtnow = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    exn = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    if idthdt == 1:
+        dthetadt = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+    if imoist == 1:
+        qvold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qcold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qrold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qvnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qcnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qrnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qvnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qcnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        qrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+        lheat = np.empty((counts_vs[rank]//(nz+1),nz+1), dtype=np.float64)
+        prec = np.empty((counts_un_1D[rank],), dtype=np.float64)
+        tot_prec = np.empty((counts_un_1D[rank],), dtype=np.float64)
+        if imicrophys == 2:
+            ncold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            nrold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            ncnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            nrnow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            ncnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+            nrnew = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
+    
     # ########## TIME LOOP #######################################################
     # ----------------------------------------------------------------------------
     # Loop over all time steps
@@ -562,10 +631,10 @@ if __name__ == "__main__":
         if imoist == 1:
             if idbg == 1:
                 print("Add function call to prog_moisture")
-            qvnew,qcnew,qrnew = prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx, dthetadt=dthetadt)
+            qvnew,qcnew,qrnew = prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx,nx_p, dthetadt=dthetadt)
 
             if imicrophys == 2:
-                ncnew, nrnew = prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx, dthetadt=dthetadt)
+                ncnew, nrnew = prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx,nx_p, dthetadt=dthetadt)
             
         #
         # *** Exercise 4.1 / 5.1 moisture scalars ***
@@ -575,65 +644,66 @@ if __name__ == "__main__":
         #
 
         # *** edit here ***
-        unew = prog_velocity(uold, unow, mtg, dtdx, dthetadt = dthetadt)
+        unew = prog_velocity(uold, unow, mtg, dtdx,nx_p, dthetadt = dthetadt)
         #
         # *** Exercise 2.1 velocity ***
 
         # exchange boundaries if periodic
         # -------------------------------------------------------------------------
         if irelax == 0:
-            snew = periodic(snew, nx, nb)
-            unew = periodic(unew, nx, nb)
+            snew = periodic(snew, nx_p, nb)
+            unew = periodic(unew, nx_p, nb)
 
             if imoist == 1:
-                qvnew = periodic(qvnew, nx, nb)
-                qcnew = periodic(qcnew, nx, nb)
-                qrnew = periodic(qrnew, nx, nb)
+                qvnew = periodic(qvnew, nx_p, nb)
+                qcnew = periodic(qcnew, nx_p, nb)
+                qrnew = periodic(qrnew, nx_p, nb)
 
             # 2-moment scheme
             if imoist == 1 and imicrophys == 2:
-                ncnew = periodic(ncnew, nx, nb)
-                nrnew = periodic(nrnew, nx, nb)
+                ncnew = periodic(ncnew, nx_p, nb)
+                nrnew = periodic(nrnew, nx_p, nb)
 
         # relaxation of prognostic fields
         # -------------------------------------------------------------------------
         if irelax == 1:
-            if idbg == 1:
-                print("Relaxing prognostic fields ...\n")
-            snew = relax(snew, nx, nb, sbnd1, sbnd2)
-            unew = relax(unew, nx1, nb, ubnd1, ubnd2)
-            if imoist == 1:
+            if (rank == 0) | (rank == rank_size-1): 
+                if idbg == 1:
+                    print("Relaxing prognostic fields ...\n")
+                snew = relax(snew, nx_p, nb, sbnd1, sbnd2, rank, rank_size)
+                unew = relax(unew, nx1_p, nb, ubnd1, ubnd2, rank, rank_size)
+                if imoist == 1:
 
-                qvnew = relax(qvnew, nx, nb, qvbnd1, qvbnd2)
-                qcnew = relax(qcnew, nx, nb, qcbnd1, qcbnd2)
-                qrnew = relax(qrnew, nx, nb, qrbnd1, qrbnd2)
+                    qvnew = relax(qvnew, nx_p, nb, qvbnd1, qvbnd2, rank, rank_size)
+                    qcnew = relax(qcnew, nx_p, nb, qcbnd1, qcbnd2, rank, rank_size)
+                    qrnew = relax(qrnew, nx_p, nb, qrbnd1, qrbnd2, rank, rank_size)
 
-            # 2-moment scheme
-            if imoist == 1 and imicrophys == 2:
-                ncnew = relax(ncnew, nx, nb, ncbnd1, ncbnd2)
-                nrnew = relax(nrnew, nx, nb, nrbnd1, nrbnd2)
+                # 2-moment scheme
+                if imoist == 1 and imicrophys == 2:
+                    ncnew = relax(ncnew, nx_p, nb, ncbnd1, ncbnd2, rank, rank_size)
+                    nrnew = relax(nrnew, nx_p, nb, nrbnd1, nrbnd2, rank, rank_size)
 
-        # Diffusion and gravity wave absorber
+        # Diffusion and gravity wave absorber - alte position
         # ------------------------------------
 
-        if imoist == 0:
-            [unew, snew] = horizontal_diffusion(tau, unew, snew)
-        else:
-            if imicrophys == 2:
-                [unew, snew, qvnew, qcnew, qrnew, ncnew, nrnew] = horizontal_diffusion(
-                    tau,
-                    unew,
-                    snew,
-                    qvnew=qvnew,
-                    qcnew=qcnew,
-                    qrnew=qrnew,
-                    ncnew=ncnew,
-                    nrnew=nrnew,
-                )
-            else:
-                [unew, snew, qvnew, qcnew, qrnew] = horizontal_diffusion(
-                    tau, unew, snew, qvnew=qvnew, qcnew=qcnew, qrnew=qrnew
-                )
+        # if imoist == 0:
+        #     [unew, snew] = horizontal_diffusion(tau, unew, snew)
+        # else:
+        #     if imicrophys == 2:
+        #         [unew, snew, qvnew, qcnew, qrnew, ncnew, nrnew] = horizontal_diffusion(
+        #             tau,
+        #             unew,
+        #             snew,
+        #             qvnew=qvnew,
+        #             qcnew=qcnew,
+        #             qrnew=qrnew,
+        #             ncnew=ncnew,
+        #             nrnew=nrnew,
+        #         )
+        #     else:
+        #         [unew, snew, qvnew, qcnew, qrnew] = horizontal_diffusion(
+        #             tau, unew, snew, qvnew=qvnew, qcnew=qcnew, qrnew=qrnew
+        #         )
 
         # *** Exercise 2.2 Diagnostic computation of pressure ***
         # *** Diagnostic computation of pressure ***
@@ -718,13 +788,14 @@ if __name__ == "__main__":
                 # periodic lateral boundary conditions
                 # ----------------------------
                 if irelax == 0:
-                    dthetadt = periodic(dthetadt, nx, nb)
+                    dthetadt = periodic(dthetadt, nx_p, nb)
                 else:
                     # Relax latent heat fields
                     # ----------------------------
-                    dthetadt = relax(dthetadt, nx, nb, dthetadtbnd1, dthetadtbnd2)
+                    if (rank == 0) | (rank == rank_size-1):
+                        dthetadt = relax(dthetadt, nx_p, nb, dthetadtbnd1, dthetadtbnd2, rank, rank_size)
             else:
-                dthetadt = np.zeros((nxb, nz1))
+                dthetadt = np.zeros((nxb_p, nz1))
 
         if idbg == 1:
             print("Preparing next time step ...\n")
@@ -737,8 +808,6 @@ if __name__ == "__main__":
             ncold = ncnow
             ncnow = ncnew
 
-            nrold = nrnow
-            nrnow = nrnew
 
         sold = snow
         snow = snew
@@ -757,12 +826,43 @@ if __name__ == "__main__":
             qrnow = qrnew
             if idbg == 1:
                 print("exchange moisture variables")
+            qvold = qvnow
+            qvnow = qvnew
+
+            qcold = qcnow
+            qcnow = qcnew
+
+            qrold = qrnow
+            qrnow = qrnew
 
             if imicrophys == 2:
                 if idbg == 1:
                     print("exchange number densitiy variables")
+                ncold = ncnow
+                ncnow = ncnew
 
-        #
+                nrold = nrnow
+                nrnow = nrnew
+
+        ### apply horizontal diffusion
+        if imoist == 0:
+            [unew, snew] = horizontal_diffusion(tau, unew, snew)
+        else:
+            if imicrophys == 2:
+                [unew, snew, qvnew, qcnew, qrnew, ncnew, nrnew] = horizontal_diffusion(
+                    tau,
+                    unew,
+                    snew,
+                    qvnew=qvnew,
+                    qcnew=qcnew,
+                    qrnew=qrnew,
+                    ncnew=ncnew,
+                    nrnew=nrnew,
+                )
+            else:
+                [unew, snew, qvnew, qcnew, qrnew] = horizontal_diffusion(
+                    tau, unew, snew, qvnew=qvnew, qcnew=qcnew, qrnew=qrnew
+                )
         # *** Exercise 2.1 / 4.1 / 5.1 ***
 
         # check maximum cfl criterion
