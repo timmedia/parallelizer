@@ -540,7 +540,7 @@ if __name__ == "__main__":
     counts_hs = [(nx_hs//rank_size+2)*nz] +[(nx_hs//rank_size+ int(np.ceil(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size)*nz] * (rank_size - 4) +[(nx_hs//rank_size+int(np.floor(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size +2)*nz]
     displacements_hs = [sum(counts_hs[:i]) for i in range(rank_size)]
 
-    nx_p = counts_un[rank]//nz-3
+    nx_p = counts_un[rank]//nz-4
     nx1_p = nx_p + 1
     nxb_p = nx_p + 2*nb
     
