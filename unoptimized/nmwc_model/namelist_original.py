@@ -10,38 +10,37 @@ and all subfunctions.
 
 # Output control
 # -------------------------------------------------
-out_fname = "output_test"  # file name of output
-iout = 1  # write every iout-th time-step into the output file
+out_fname = "output_ex2"  # file name of output
+iout = 360  # write every iout-th time-step into the output file
 iiniout = 1  # write initial field (0 = no, 1 = yes)
+
 # Domain size
-#hoi2   zggvgzvgzvgz
 # -------------------------------------------------
 xl = 500000.0  # domain size  [m]
-nx = 1000  # number of grid points in horizontal direction
+nx = 200  # number of grid points in horizontal direction
 dx = xl / nx  # horizontal resolution [m]
-thl = 150.0  # domain depth  [K]
+thl = 350.0  # domain depth  [K]
 nz = 60  # vertical resolution
-dt = 10  # time step [s]
+dt = 5  # time step [s]
 diff = 0.02  # (horizontal) diffusion coefficient
-time = dt  # integration time [s]
-
+time = 6 * 60 * 60  # integration time [s]
 
 # Topography
 # -------------------------------------------------
-topomx = 1000  # mountain height [m]
+topomx = 500  # mountain height [m]
 topowd = 50000  # mountain half width [m]
-topotim = 1800 # mountain growth time [s]
+topotim = 1800  # mountain growth time [s]
 
 # Initial atmosphere
 # -------------------------------------------------
 u00 = 22.5  # initial velocity [m/s]
 bv00 = 0.015  # Brunt-Vaisalla frequency [1/s]
-th00 = 280.0  # potential temperature at surface
+th00 = 300.0  # potential temperature at surface
 
 ishear = 0  # wind shear simulation (0 = no shear, 1 = shear)
-k_shl = 27  # bottom level of wind shear layer (ishear = 1)
+k_shl = 5  # bottom level of wind shear layer (ishear = 1)
 # bottom level of wind layer is 0 (index)
-k_sht = 37  # top level of wind shear layer (ishear = 1)
+k_sht = 8  # top level of wind shear layer (ishear = 1)
 # top level of wind layer is nz-1 (index)
 u00_sh = 10.0  # initial velocity below shear layer [m/s] (ishear = 1)
 # u00 is speed above shear layer [m/s]   #orig 0.
