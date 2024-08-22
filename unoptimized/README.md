@@ -226,3 +226,7 @@ they can use to verify the correctness of their input.
 # Euler
 
     sbatch -n 1 --time=00:01:00 --mem-per-cpu=4096 --wrap="python -m cProfile nmwc_model/solver.py" -o unoptimized.txt
+
+# Profiling
+
+    python -m cProfile -s 'cumulative' nmwc_model/solver.py >> profile_macbookair_modified_namelist.txt
