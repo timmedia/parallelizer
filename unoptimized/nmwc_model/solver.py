@@ -84,7 +84,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 rank_size = comm.Get_size()
 
-
+u_gianni = np.arange(1)
 if __name__ == "__main__":
     # Print the full precision
     # DL: REMOVE FOR STUDENT VERSION
@@ -379,6 +379,7 @@ if __name__ == "__main__":
     # *** Exercise 3.1 height-dependent diffusion coefficient ***
     # *** edit here ***
 
+
     k = np.arange(nz)
     tau = diff + (diffabs -diff)*np.sin(np.pi/2*(k-nz+nab-1)/nab)**2
     tau[0:nz-nab] = diff
@@ -539,7 +540,7 @@ if __name__ == "__main__":
     counts_hs = [(nx_hs//rank_size+2)*nz] +[(nx_hs//rank_size+ int(np.ceil(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size)*nz] * (rank_size - 4) +[(nx_hs//rank_size+int(np.floor(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size +2)*nz]
     displacements_hs = [sum(counts_hs[:i]) for i in range(rank_size)]
 
-    nx_p = counts_un[rank]//nz-3
+    nx_p = counts_un[rank]//nz-4
     nx1_p = nx_p + 1
     nxb_p = nx_p + 2*nb
     
@@ -618,8 +619,139 @@ if __name__ == "__main__":
         #
 
         # *** edit here ***
+        # print("mtg:  ", mtg[5,5])
+        # print("exn:  ", exn[5,5])
+        # print("prs:  ", prs[5,5])
+        # print("uold: ", uold[5,5])
+        # print("unow: ", unow[5,5])
+        # print("unew: ", unew[5,5])
+        # print("sold: ", sold[5,5])
+        # print("snow: ", snow[5,5])
+        # print("snew: ", snew[5,5])
+        # print()
 
-        snew = prog_isendens(sold, snow, unow, dtdx, dthetadt = dthetadt)
+
+        ##generating buffered global fields with boundarys for scattering
+        if rank == 0:
+            for x_loc in displacements_un:
+                sold_g = np.insert(sold_g, x_loc//nz,sold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                snow_g = np.insert(snow_g, x_loc//nz,snow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                # snew_g = np.insert(snew_g, x_loc//nz,snew_g[i//nz-nb:i//nz], axis=0)
+                mtg_g = np.insert(mtg_g, x_loc//nz,mtg_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                topo_g = np.insert(topo_g, x_loc//nz,topo_g[x_loc//nz-nb:x_loc//nz], axis=0)
+
+            for x_loc in displacements_vs:
+                prs_g = np.insert(prs_g, x_loc//(nz+1),prs_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+                zhtold_g = np.insert(zhtold_g, x_loc//(nz+1),zhtold_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+                zhtnow_g = np.insert(zhtnow_g, x_loc//(nz+1),zhtnow_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+                # exn_g = np.insert(exn_g, x_loc//(nz+1),exn_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+
+            for x_loc in displacements_hs:
+                uold_g = np.insert(uold_g, x_loc//nz+1,uold_g[x_loc//nz + 1 -(nb+1):(x_loc + 1)//nz], axis=0)
+                unow_g = np.insert(unow_g, x_loc//nz+1,unow_g[x_loc//nz + 1-(nb+1):(x_loc + 1)//nz], axis=0)
+                # unew_g = np.insert(unew_g, (x_loc + 1)//nz,unew_g[(x_loc + 1)//nz-(nb+1):(x_loc + 1)//nz], axis=0)
+            if idthdt == 1:
+                for x_loc in displacements_vs:
+                    dthetadt_g = np.insert(dthetadt_g, x_loc//(nz+1),dthetadt_g[x_loc//(nz+1)-nb:x_loc//(nz+1)], axis=0)
+            if imoist == 1:
+                for x_loc in displacements_un:
+                    qvold_g = np.insert(qvold_g, x_loc//nz,qvold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qcold_g = np.insert(qcold_g, x_loc//nz,qcold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qrold_g = np.insert(qrold_g, x_loc//nz,qrold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qvnow_g = np.insert(qvnow_g, x_loc//nz,qvnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qcnow_g = np.insert(qcnow_g, x_loc//nz,qcnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    qrnow_g = np.insert(qrnow_g, x_loc//nz,qrnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # qvnew_g = np.insert(qvnew_g, x_loc//nz,qvnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # qcnew_g = np.insert(qcnew_g, x_loc//nz,qcnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # qrnew_g = np.insert(qrnew_g, x_loc//nz,qrnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    prec_g = np.insert(prec_g, x_loc//nz,prec_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    tot_prec_g = np.insert(tot_prec_g, x_loc//nz,tot_prec_g[x_loc//nz-nb:x_loc//nz], axis=0)
+            if (imoist == 1)&(imicrophys == 2):
+                for x_loc in displacements_un:
+                    ncold_g = np.insert(ncold_g, x_loc//nz,ncold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    nrold_g = np.insert(nrold_g, x_loc//nz,nrold_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    ncnow_g = np.insert(ncnow_g, x_loc//nz,ncnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    nrnow_g = np.insert(nrnow_g, x_loc//nz,nrnow_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # ncnew_g = np.insert(ncnew_g, x_loc//nz,ncnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+                    # nrnew_g = np.insert(nrnew_g, x_loc//nz,nrnew_g[x_loc//nz-nb:x_loc//nz], axis=0)
+        else:
+            sold_g = None
+            snow_g = None
+            # snew_g = None
+            uold_g = None
+            unow_g = None
+            # unew_g = None
+            mtg_g = None
+            prs_g = None
+            topo_g = None
+            zhtold_g = None
+            zhtnow_g = None
+            # exn_g = None
+            if idthdt == 1:
+                dthetadt_g = None
+            if imoist == 1:
+                qvold_g = None
+                qcold_g = None
+                qrold_g = None
+                qvnow_g = None
+                qcnow_g = None
+                qrnow_g = None
+                # qvnew_g = None
+                # qcnew_g = None
+                # qrnew_g = None
+                prec_g = None
+                tot_prec_g = None
+            if (imoist == 1)&(imicrophys == 2):
+                ncold_g = None
+                nrold_g = None
+                ncnow_g = None
+                nrnow_g = None
+                # ncnew_g = None
+                # nrnew_g = None
+
+        #scattering of all fields
+        comm.Scatterv([sold_g,counts_un,displacements_un,MPI.DOUBLE], sold, root=0)
+        comm.Scatterv([snow_g,counts_un,displacements_un,MPI.DOUBLE], snow, root=0)
+        # comm.Scatterv([snew_g,counts_un,displacements_un,MPI.DOUBLE], snew, root=0)
+        comm.Scatterv([uold_g,counts_hs,displacements_hs,MPI.DOUBLE], uold, root=0)
+        comm.Scatterv([unow_g,counts_hs,displacements_hs,MPI.DOUBLE], unow, root=0)
+        # comm.Scatterv([unew_g,counts_hs,displacements_hs,MPI.DOUBLE], unew, root=0)
+        comm.Scatterv([mtg_g,counts_un,displacements_un,MPI.DOUBLE], mtg, root=0)
+        comm.Scatterv([prs_g,counts_vs,displacements_vs,MPI.DOUBLE], prs, root=0)
+        comm.Scatterv([topo_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], topo, root=0)
+        comm.Scatterv([zhtold_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtold, root=0)
+        comm.Scatterv([zhtnow_g,counts_vs,displacements_vs,MPI.DOUBLE], zhtnow, root=0)
+        # comm.Scatterv([exn_g,counts_vs,displacements_vs,MPI.DOUBLE], exn, root=0)
+        if idthdt == 1:
+            comm.Scatterv([dthetadt_g,counts_vs,displacements_vs,MPI.DOUBLE], dthetadt, root=0)
+        if imoist == 1:
+            comm.Scatterv([qvold_g,counts_un,displacements_un,MPI.DOUBLE], qvold, root=0)
+            comm.Scatterv([qcold_g,counts_un,displacements_un,MPI.DOUBLE], qcold, root=0)
+            comm.Scatterv([qrold_g,counts_un,displacements_un,MPI.DOUBLE], qrold, root=0)
+            comm.Scatterv([qvnow_g,counts_un,displacements_un,MPI.DOUBLE], qvnow, root=0)
+            comm.Scatterv([qcnow_g,counts_un,displacements_un,MPI.DOUBLE], qcnow, root=0)
+            comm.Scatterv([qrnow_g,counts_un,displacements_un,MPI.DOUBLE], qrnow, root=0)
+            # comm.Scatterv([qvnew_g,counts_un,displacements_un,MPI.DOUBLE], qvnew, root=0)
+            # comm.Scatterv([qcnew_g,counts_un,displacements_un,MPI.DOUBLE], qcnew, root=0)
+            # comm.Scatterv([qrnew_g,counts_un,displacements_un,MPI.DOUBLE], qvnew, root=0)
+            # comm.Scatterv([lheat_g,counts_vs,displacements_vs,MPI.DOUBLE], lheat, root=0)
+            comm.Scatterv([prec_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], prec, root=0)
+            comm.Scatterv([tot_prec_g,counts_un_1D,displacements_un_1D,MPI.DOUBLE], tot_prec, root=0)
+            if imicrophys == 2:
+                comm.Scatterv([ncold_g,counts_un,displacements_un,MPI.DOUBLE], ncold, root=0)
+                comm.Scatterv([nrold_g,counts_un,displacements_un,MPI.DOUBLE], nrold, root=0)
+                comm.Scatterv([ncnow_g,counts_un,displacements_un,MPI.DOUBLE], ncnow, root=0)
+                comm.Scatterv([nrnow_g,counts_un,displacements_un,MPI.DOUBLE], nrnow, root=0)
+                # comm.Scatterv([ncnew_g,counts_un,displacements_un,MPI.DOUBLE], ncnew, root=0)
+                # comm.Scatterv([nrnew_g,counts_un,displacements_un,MPI.DOUBLE], nrnew, root=0)
+
+        ### every rank calculates its on x dimension
+
+
+        print("hoi ich bin de rank " + str(rank) +" und ich säge yeeee, bis da h häds klappt")
+
+        snew = prog_isendens(sold, snow, unow, dtdx,nx_p, dthetadt = dthetadt)
+
         #
         # *** Exercise 2.1 isentropic mass density ***
 
@@ -647,6 +779,16 @@ if __name__ == "__main__":
         unew = prog_velocity(uold, unow, mtg, dtdx,nx_p, dthetadt = dthetadt)
         #
         # *** Exercise 2.1 velocity ***
+        # print("mtg:  ", mtg[5,5])
+        # print("exn:  ", exn[5,5])
+        # print("prs:  ", prs[5,5])
+        # print("uold: ", uold[5,5])
+        # print("unow: ", unow[5,5])
+        # print("unew: ", unew[5,5])
+        # print("sold: ", sold[5,5])
+        # print("snow: ", snow[5,5])
+        # print("snew: ", snew[5,5])
+        # print()
 
         # exchange boundaries if periodic
         # -------------------------------------------------------------------------
@@ -737,6 +879,7 @@ if __name__ == "__main__":
 
             if idbg == 1:
                 print("Implement moisture clipping")
+
             qvnew[qvnew < 0] = 0
             qcnew[qcnew < 0] = 0
             qrnew[qrnew < 0] = 0
@@ -744,6 +887,13 @@ if __name__ == "__main__":
             if imicrophys == 2: 
                 ncnew[ncnew < 0] = 0
                 nrnew[nrnew < 0] = 0
+
+            
+
+
+
+
+
 
             #
             # *** Exercise 4.1 Moisture ***
@@ -804,9 +954,13 @@ if __name__ == "__main__":
         # *** exchange isentropic mass density and velocity ***
         # *** (later also qv,qc,qr,nc,nr) ***
         # *** edit here ***
-        if imicrophys == 2:
-            ncold = ncnow
-            ncnow = ncnew
+        #
+        # print("uold: ",uold[1,1])
+        # print("unow: ",unow[1,1])
+        # print("unew: ",unew[1,1])
+        # print()
+
+
 
 
         sold = snow
@@ -815,15 +969,8 @@ if __name__ == "__main__":
         uold = unow
         unow = unew
 
+
         if imoist == 1:
-            qvold = qvnow
-            qvnow = qvnew
-
-            qcold = qcnow
-            qcnow = qcnew
-
-            qrold = qrnow
-            qrnow = qrnew
             if idbg == 1:
                 print("exchange moisture variables")
             qvold = qvnow
@@ -870,10 +1017,12 @@ if __name__ == "__main__":
         if iprtcfl == 1:
             u_max = np.amax(np.abs(unow))
             cfl_max = u_max * dtdx
+            u_gianni = np.append(u_gianni,u_max)
             print("============================================================\n")
             print("CFL MAX: %g U MAX: %g m/s \n" % (cfl_max, u_max))
             if cfl_max > 1:
                 print("!!! WARNING: CFL larger than 1 !!!\n")
+                test_von_gianni = u_gianni
             elif np.isnan(cfl_max):
                 print("!!! MODEL ABORT: NaN values !!!\n")
             print("============================================================\n")
