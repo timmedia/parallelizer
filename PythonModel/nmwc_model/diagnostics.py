@@ -175,10 +175,12 @@ def diag_density_and_temperature(s, exn, zht, th0):
     """
     k = np.arange(0, nz)
     th = th0[np.newaxis, :]
-
+    
     rho = np.zeros_like(s)
     rho[:, k] = s * (th[:, k + 1] - th[:, k]) / (zht[:, k + 1] - zht[:, k])
-
+    # print(sum((zht[:, k + 1] - zht[:, k])==0))
+    # print(rho.shape,zht.shape,th.shape,s.shape)
+    # print(zht[-1])
     temp = np.zeros_like(s)
     temp[:, k] = 0.5 * (th[:, k] * exn[:, k] + th[:, k + 1] * exn[:, k + 1]) / cp
 

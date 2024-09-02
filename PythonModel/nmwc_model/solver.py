@@ -80,6 +80,23 @@ from nmwc_model.namelist import (
 #import mpi4py
 from mpi4py import MPI
 
+def exchange_borders(data, tag: int):
+    """Exchange broders with next rank for 2-dimensional data set `data`. (scattered along first axis)"""
+    left_rank = (rank - 1) % rank_size
+    right_rank = (rank + 1) % rank_size
+
+    send_to_right = data[-2*nb:-nb]
+    send_to_left = data[nb:2*nb]
+
+    new_left_border = np.empty(nb)
+    new_right_border = np.empty(nb)
+
+    comm.Sendrecv(sendbuf=send_to_left, dest=left_rank, sendtag=rank * 10_000 + 100 * left_rank +
+                  tag, recvbuf=new_right_border, source=left_rank, recvtag=left_rank * 10_000 + 100 * rank + tag)
+
+    comm.Sendrecv(sendbuf=send_to_right, dest=right_rank, sendtag=rank * 10_000 + 100 * right_rank +
+                  tag, recvbuf=new_left_border, source=left_rank, recvtag=right_rank * 10_000 + 100 * rank + tag)
+    
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 rank_size = comm.Get_size()
@@ -523,27 +540,37 @@ if __name__ == "__main__":
     #finding points where the fields are scattered
 
     #horizonntally unstagered and vertically unstaggered
-    nx_un = nx+(rank_size-1)*nb
-    counts_un = [(nx_un//rank_size+2)*nz] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size)*nz] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size +2)*nz]
+    nx_un = nx+(rank_size)*nb
+    counts_un = [(nx_un//rank_size+1)*nz] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size)*nz] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*nz]+ [(nx_un//rank_size +1)*nz]
     displacements_un = [sum(counts_un[:i]) for i in range(0,rank_size)]
 
     #horizonntally unstagered and vertically 1D
-    counts_un_1D = [(nx_un//rank_size+2)*1] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size)*1] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size +2)*1]
+    counts_un_1D = [(nx_un//rank_size+1)*1] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size)*1] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*1]+ [(nx_un//rank_size +1)*1]
     displacements_un_1D = [sum(counts_un_1D[:i]) for i in range(rank_size)]
 
     #horizonntally unstagered and vertically staggered
-    counts_vs = [(nx_un//rank_size+2)*(nz+1)] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size)*(nz+1)] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size +2)*(nz+1)]
+    counts_vs = [(nx_un//rank_size+1)*(nz+1)] +[(nx_un//rank_size+ int(np.ceil(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size)*(nz+1)] * (rank_size - 4) +[(nx_un//rank_size+int(np.floor(nx_un%rank_size/2)))*(nz+1)]+ [(nx_un//rank_size +1)*(nz+1)]
     displacements_vs = [sum(counts_vs[:i]) for i in range(rank_size)]
 
     #horizonntally stagered and vertically unstaggered
-    nx_hs = (nx+1)+(rank_size-1)*(nb+1)
-    counts_hs = [(nx_hs//rank_size+2)*nz] +[(nx_hs//rank_size+ int(np.ceil(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size)*nz] * (rank_size - 4) +[(nx_hs//rank_size+int(np.floor(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size +2)*nz]
+    nx_hs = nx+(rank_size)*(nb+1)
+    counts_hs = [(nx_hs//rank_size+1)*nz] +[(nx_hs//rank_size+ int(np.ceil(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size)*nz] * (rank_size - 4) +[(nx_hs//rank_size+int(np.floor(nx_hs%rank_size/2)))*nz]+ [(nx_hs//rank_size +1)*nz]
     displacements_hs = [sum(counts_hs[:i]) for i in range(rank_size)]
 
-    nx_p = counts_un[rank]//nz-4
-    nx1_p = nx_p + 1
-    nxb_p = nx_p + 2*nb
+    if (rank == 0)|(rank == rank_size-1):
+        nx_p = counts_un[rank]//nz-3
+        nx1_p = nx_p + 1
+    else:
+        nx_p = counts_un[rank]//nz-2
+        nx1_p = nx_p + 1
     
+    if (rank == 0):
+        nb_p = nb
+        nxb_p = nx_p + nb_p + 1
+    else:
+        nb_p = nb//2
+        nxb_p = nx_p + 2*nb_p 
+
     # gereating empty arrays for scattering
     sold = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
     snow = np.empty((counts_un[rank]//nz,nz), dtype=np.float64)
@@ -708,6 +735,7 @@ if __name__ == "__main__":
                 nrnow_g = None
                 # ncnew_g = None
                 # nrnew_g = None
+            
 
         #scattering of all fields
         comm.Scatterv([sold_g,counts_un,displacements_un,MPI.DOUBLE], sold, root=0)
@@ -750,7 +778,7 @@ if __name__ == "__main__":
 
         print("hoi ich bin de rank " + str(rank) +" und ich säge yeeee, bis da h häds klappt")
 
-        snew = prog_isendens(sold, snow, unow, dtdx,nx_p, dthetadt = dthetadt)
+        snew = prog_isendens(sold, snow, unow, dtdx,nx_p, nb_p, dthetadt = dthetadt)
 
         #
         # *** Exercise 2.1 isentropic mass density ***
@@ -763,10 +791,10 @@ if __name__ == "__main__":
         if imoist == 1:
             if idbg == 1:
                 print("Add function call to prog_moisture")
-            qvnew,qcnew,qrnew = prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx,nx_p, dthetadt=dthetadt)
+            qvnew,qcnew,qrnew = prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx,nx_p,nb_p, dthetadt=dthetadt)
 
             if imicrophys == 2:
-                ncnew, nrnew = prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx,nx_p, dthetadt=dthetadt)
+                ncnew, nrnew = prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx,nx_p,nb_p, dthetadt=dthetadt)
             
         #
         # *** Exercise 4.1 / 5.1 moisture scalars ***
@@ -776,7 +804,9 @@ if __name__ == "__main__":
         #
 
         # *** edit here ***
-        unew = prog_velocity(uold, unow, mtg, dtdx,nx_p, dthetadt = dthetadt)
+        unew = prog_velocity(uold, unow, mtg, dtdx,nx_p,nb_p, dthetadt = dthetadt)
+        # if rank == 1:
+        #     print(unew)
         #
         # *** Exercise 2.1 velocity ***
         # print("mtg:  ", mtg[5,5])
@@ -793,18 +823,18 @@ if __name__ == "__main__":
         # exchange boundaries if periodic
         # -------------------------------------------------------------------------
         if irelax == 0:
-            snew = periodic(snew, nx_p, nb)
-            unew = periodic(unew, nx_p, nb)
+            snew = periodic(snew, nx_p, nb_p)
+            unew = periodic(unew, nx_p, nb_p)
 
             if imoist == 1:
-                qvnew = periodic(qvnew, nx_p, nb)
-                qcnew = periodic(qcnew, nx_p, nb)
-                qrnew = periodic(qrnew, nx_p, nb)
+                qvnew = periodic(qvnew, nx_p, nb_p)
+                qcnew = periodic(qcnew, nx_p, nb_p)
+                qrnew = periodic(qrnew, nx_p, nb_p)
 
             # 2-moment scheme
             if imoist == 1 and imicrophys == 2:
-                ncnew = periodic(ncnew, nx_p, nb)
-                nrnew = periodic(nrnew, nx_p, nb)
+                ncnew = periodic(ncnew, nx_p, nb_p)
+                nrnew = periodic(nrnew, nx_p, nb_p)
 
         # relaxation of prognostic fields
         # -------------------------------------------------------------------------
@@ -812,18 +842,18 @@ if __name__ == "__main__":
             if (rank == 0) | (rank == rank_size-1): 
                 if idbg == 1:
                     print("Relaxing prognostic fields ...\n")
-                snew = relax(snew, nx_p, nb, sbnd1, sbnd2, rank, rank_size)
-                unew = relax(unew, nx1_p, nb, ubnd1, ubnd2, rank, rank_size)
+                snew = relax(snew, nx_p, nb_p, sbnd1, sbnd2, rank, rank_size)
+                unew = relax(unew, nx1_p, nb_p, ubnd1, ubnd2, rank, rank_size)
                 if imoist == 1:
 
-                    qvnew = relax(qvnew, nx_p, nb, qvbnd1, qvbnd2, rank, rank_size)
-                    qcnew = relax(qcnew, nx_p, nb, qcbnd1, qcbnd2, rank, rank_size)
-                    qrnew = relax(qrnew, nx_p, nb, qrbnd1, qrbnd2, rank, rank_size)
+                    qvnew = relax(qvnew, nx_p, nb_p, qvbnd1, qvbnd2, rank, rank_size)
+                    qcnew = relax(qcnew, nx_p, nb_p, qcbnd1, qcbnd2, rank, rank_size)
+                    qrnew = relax(qrnew, nx_p, nb_p, qrbnd1, qrbnd2, rank, rank_size)
 
                 # 2-moment scheme
                 if imoist == 1 and imicrophys == 2:
-                    ncnew = relax(ncnew, nx_p, nb, ncbnd1, ncbnd2, rank, rank_size)
-                    nrnew = relax(nrnew, nx_p, nb, nrbnd1, nrbnd2, rank, rank_size)
+                    ncnew = relax(ncnew, nx_p, nb_p, ncbnd1, ncbnd2, rank, rank_size)
+                    nrnew = relax(nrnew, nx_p, nb_p, nrbnd1, nrbnd2, rank, rank_size)
 
         # Diffusion and gravity wave absorber - alte position
         # ------------------------------------
@@ -938,12 +968,12 @@ if __name__ == "__main__":
                 # periodic lateral boundary conditions
                 # ----------------------------
                 if irelax == 0:
-                    dthetadt = periodic(dthetadt, nx_p, nb)
+                    dthetadt = periodic(dthetadt, nx_p, nb_p)
                 else:
                     # Relax latent heat fields
                     # ----------------------------
                     if (rank == 0) | (rank == rank_size-1):
-                        dthetadt = relax(dthetadt, nx_p, nb, dthetadtbnd1, dthetadtbnd2, rank, rank_size)
+                        dthetadt = relax(dthetadt, nx_p, nb_p, dthetadtbnd1, dthetadtbnd2, rank, rank_size)
             else:
                 dthetadt = np.zeros((nxb_p, nz1))
 

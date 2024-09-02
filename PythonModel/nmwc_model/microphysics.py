@@ -132,7 +132,7 @@ def kessler(s, qv, qc, qr, prs, exn, zht, th0, prec, tot_prec):
     xlv = 2.5e6
     max_cr_sedimentation = 0.75
     rhowater = 1000.0
-
+    # print(s.shape)
     # diagnose air density and temperature
     rho, temp = diag_density_and_temperature(s, exn, zht, th0)
 
