@@ -92,10 +92,10 @@ def exchange_borders(data, tag: int):
     new_left_border = np.empty(nb_n)
     new_right_border = np.empty(nb_n)
 
-    comm.Sendrecv(sendbuf=send_to_left, dest=left_rank, sendt_nag=rank_p * 10_000 + 100 * left_rank +
+    comm.Sendrecv(sendbuf=send_to_left, dest=left_rank, sendtag=rank_p * 10_000 + 100 * left_rank +
                   tag, recvbuf=new_right_border, source=left_rank, recvtag=left_rank * 10_000 + 100 * rank_p + tag)
 
-    comm.Sendrecv(sendbuf=send_to_right, dest=right_rank, sendt_nag=rank_p * 10_000 + 100 * right_rank +
+    comm.Sendrecv(sendbuf=send_to_right, dest=right_rank, sendtag=rank_p * 10_000 + 100 * right_rank +
                   tag, recvbuf=new_left_border, source=left_rank, recvtag=right_rank * 10_000 + 100 * rank_p + tag)
 
 
@@ -516,11 +516,13 @@ def main():
     mtg_p = np.empty((nx_p + 2 * nb_n, nz_n))
     tau_p = np.empty(nz_n)
     prs0_p = np.zeros(nz_n + 1)
-    prs_p = np.empty((nx_p + 2 * nb_n, nz_n))
+    prs_p = np.empty((nx_p + 2 * nb_n, nz1_n))
     topo_p = np.empty((nx_p + 2 * nb_n, 1))
-    zhtold_p = np.empty((nx_p + 2 * nb_n, nz_n))
-    zhtnow_p = np.empty((nx_p + 2 * nb_n, nz_n))
+    zhtold_p = np.empty((nx_p + 2 * nb_n, nz1_n))
+    zhtnow_p = np.empty((nx_p + 2 * nb_n, nz1_n))
     th0_p = np.empty((nz_n + 1))
+    tot_prec_p = np.empty(nx_p + 2 * nb_n)
+    prec_p = np.empty(nx_p + 2 * nb_n)
     # endregion
 
     # increase number of output steps by 1 for initial profile
@@ -588,6 +590,8 @@ def main():
             comm.Send(zhtold_g[rank_slice, :], dest=i, tag=i * 1000 + 25)
             comm.Send(zhtnow_g[rank_slice, :], dest=i, tag=i * 1000 + 26)
             comm.Send(th0_g, dest=i, tag=i * 1000 + 27)
+            comm.Send(tot_prec_g[rank_slice], dest=i, tag=i * 1000 + 28)
+            comm.Send(prec_g[rank_slice], dest=i, tag=i * 1000 + 29)
         # endregion
 
         # region Set process variables for process with rank 0
@@ -632,6 +636,8 @@ def main():
         zhtold_p = zhtold_g[rank_slice, :]
         zhtnow_p = zhtnow_g[rank_slice, :]
         th0_p = th0_g
+        tot_prec_p = tot_prec_g[rank_slice]
+        prec_p = prec_g[rank_slice]
         # endregion
     else:
         # region Receive process-specific variable values
@@ -669,9 +675,11 @@ def main():
         comm.Recv(prs_p, source=0, tag=rank_p * 1000 + 23)
         comm.Recv(topo_p, source=0, tag=rank_p * 1000 + 24)
 
-        comm.Recv(zhtold_p, source=0, tag=i * 1000 + 25)
-        comm.Recv(zhtnow_p, source=0, tag=i * 1000 + 26)
-        comm.Recv(th0_p, source=0, tag=i * 1000 + 27)
+        comm.Recv(zhtold_p, source=0, tag=rank_p * 1000 + 25)
+        comm.Recv(zhtnow_p, source=0, tag=rank_p * 1000 + 26)
+        comm.Recv(th0_p, source=0, tag=rank_p * 1000 + 27)
+        comm.Recv(tot_prec_p, source=0, tag=rank_p * 1000 + 28)
+        comm.Recv(prec_p, source=0, tag=rank_p * 1000 + 29)
         # endregion
 
     # ########## TIME LOOP #######################################################
@@ -724,11 +732,11 @@ def main():
             if idbg_n == 1:
                 print("Add function call to prog_moisture")
             qvnew_p, qcnew_p, qrnew_p = prog_moisture(
-                unow_p, qvold_p, qcold_p, qrold_p, qvnow_p, qcnow_p, qrnow_p, dtdx_p, dt_nhetadt_n=dthetadt_n, nx_n=nx_p)
+                unow_p, qvold_p, qcold_p, qrold_p, qvnow_p, qcnow_p, qrnow_p, dtdx_p, dthetadt=dthetadt_p, nx=nx_p)
 
             if imicrophys_n == 2:
                 ncnew_p, nrnew_p = prog_numdens(
-                    unow_p, ncold_p, nrold_p, ncnow_p, nrnow_p, dtdx_p, dt_nhetadt_n=dthetadt_n, nx_n=nx_p)
+                    unow_p, ncold_p, nrold_p, ncnow_p, nrnow_p, dtdx_p, dthetadt=dthetadt_p, nx=nx_p)
 
         #
         # *** Exercise 4.1 / 5.1 moisture scalars ***
@@ -739,7 +747,7 @@ def main():
 
         # *** edit here ***
         unew_p = prog_velocity(uold_p, unow_p, mtg_p,
-                               dtdx_p, dt_nhetadt_n=dthetadt_n, nx_n=nx_p)
+                               dtdx_p, dthetadt=dthetadt_p, nx=nx_p)
         #
         # *** Exercise 2.1 velocity ***
 
@@ -793,7 +801,7 @@ def main():
 
         if imoist_n == 0:
             [unew_p, snew_p] = horizontal_diffusion(
-                tau_p, unew_p, snew_p, nx_n=nx_p)
+                tau_p, unew_p, snew_p, nx=nx_p)
         else:
             if imicrophys_n == 2:
                 [unew_p, snew_p, qvnew_p, qcnew_p, qrnew_p, ncnew_p, nrnew_p] = horizontal_diffusion(
@@ -804,11 +812,11 @@ def main():
                     qcnew=qcnew_p,
                     qrnew=qrnew_p,
                     ncnew=ncnew_p,
-                    nrnew=nrnew_p,
+                    nrnew=nrnew_p, nx=nx_p
                 )
             else:
                 [unew_p, snew_p, qvnew_p, qcnew_p, qrnew_p] = horizontal_diffusion(
-                    tau_p, unew_p, snew_p, qvnew=qvnew_p, qcnew=qcnew_p, qrnew=qrnew_p, nx_n=nx_p
+                    tau_p, unew_p, snew_p, qvnew=qvnew_p, qcnew=qcnew_p, qrnew=qrnew_p, nx=nx_p
                 )
 
         # *** Exercise 2.2 Diagnostic computation of pressure ***
@@ -863,8 +871,8 @@ def main():
 
             if idbg_n == 1:
                 print("Add function call to Kessler microphysics")
-            [lheat, qvnew_p, qcnew_p, qrnew_p, prec_p, prec_tot] = kessler(
-                snew_p, qvnew_p, qcnew_p, qrnew_p, prs_p, exn_p, zhtnow_p, th0_p, prec, tot_prec)
+            [lheat, qvnew_p, qcnew_p, qrnew_p, prec_p, prec_tot_p] = kessler(
+                snew_p, qvnew_p, qcnew_p, qrnew_p, prs_p, exn_p, zhtnow_p, th0_p, prec_p, tot_prec_p)
 
             #
             # *** Exercise 4.2 Kessler ***
@@ -876,8 +884,8 @@ def main():
 
             if idbg_n == 1:
                 print("Add function call to two moment microphysics")
-            [lheat, qvnew_p, qcnew_p, qrnew_p, tot_prec, prec, ncnew_p, nrnew_p] = seifert(
-                unew_p, th0_p, prs_p, snew_p, qvnew_p, qcnew_p, qrnew_p, exn_p, zhtold_p, zhtnow_p, tot_prec, prec, ncnew_p, nrnew_p, dthetadt_n)
+            [lheat, qvnew_p, qcnew_p, qrnew_p, tot_prec_p, prec_p, ncnew_p, nrnew_p] = seifert(
+                unew_p, th0_p, prs_p, snew_p, qvnew_p, qcnew_p, qrnew_p, exn_p, zhtold_p, zhtnow_p, tot_prec_p, prec_p, ncnew_p, nrnew_p, dthetadt_n)
             #
             # *** Exercise 5.1 Two Moment Scheme ***
 
@@ -886,27 +894,27 @@ def main():
                 # Stagger lheat to model levels and compute tendency
                 k = np.arange(1, nz_n)
                 if imicrophys_n == 1:
-                    dthetadt_n[:, k] = topofact_p * 0.5 * \
+                    dthetadt_p[:, k] = topofact_p * 0.5 * \
                         (lheat[:, k - 1] + lheat[:, k]) / dt_n
                 else:
-                    dthetadt_n[:, k] = topofact_p * 0.5 * \
+                    dthetadt_p[:, k] = topofact_p * 0.5 * \
                         (lheat[:, k - 1] + lheat[:, k]) / (2.0 * dt_n)
 
                 # force dt_nhetadt_n to zeros at the bottom and at the top
-                dthetadt_n[:, 0] = 0.0
-                dthetadt_n[:, -1] = 0.0
+                dthetadt_p[:, 0] = 0.0
+                dthetadt_p[:, -1] = 0.0
 
                 # periodic lateral boundary conditions
                 # ----------------------------
                 if irelax_n == 0:
-                    dthetadt_n = periodic(dthetadt_n, nx_n, nb_n)
+                    dthetadt_p = periodic(dthetadt_p, nx_n, nb_n)
                 else:
                     # Relax latent heat fields
                     # ----------------------------
-                    dthetadt_n = relax(dthetadt_n, nx_n, nb_n,
+                    dthetadt_p = relax(dthetadt_p, nx_n, nb_n,
                                        dthetadtbnd1, dthetadtbnd2)
             else:
-                dthetadt_n = np.zeros((nx_n + 2 * nb_n, nz1_n))
+                dthetadt_p = np.zeros((nx_n + 2 * nb_n, nz1_n))
 
         if idbg_n == 1:
             print("Preparing next time step ...\n")
@@ -959,16 +967,82 @@ def main():
         # region Output every 'iout_n'-th time step
         # ---------------------------------
         if np.mod(its_p, iout_n) == 0:
-            # TODO: gather unow_g, snow_g, zhtnow_g
+            if rank_p == 0:
+                unow_buf = np.empty((rank_size * nx_p, nz_n))
+                snow_buf = np.empty((rank_size * nx_p, nz_n))
+                zhtnow_buf = np.empty((rank_size * nx_p, nz_n))
+            else:
+                unow_buf = None
+                snow_buf = None
+                zhtnow_buf = None
+
+            comm.Gather(unow_p[nb_n + 1:-nb_n, :], unow_buf, root=0)
+            comm.Gather(snow_p[nb_n:-nb_n, :], snow_buf, root=0)
+            comm.Gather(zhtnow_p[nb_n:-nb_n, :], zhtnow_buf, root=0)
+
+            if rank_p == 0:
+                unow_g[0, :] = unow_p[0, :]
+                unow_g[:nb_n+1, :] = unow_buf[:-nb_n, :]
+                unow_g[nb_n+1:-nb_n, :] = unow_buf[:, :]
+                snow_g[-nb_n:, :] = unow_buf[:nb_n, :]
+
+                snow_g[:nb_n, :] = snow_buf[:-nb_n, :]
+                snow_g[nb_n:-nb_n, :] = snow_buf[:, :]
+                snow_g[-nb_n:, :] = snow_buf[:nb_n, :]
+
+                zhtnow_g[:nb_n, :] = zhtnow_buf[:-nb_n, :]
+                zhtnow_g[nb_n:-nb_n, :] = zhtnow_buf[:, :]
+                zhtnow_g[-nb_n:, :] = zhtnow_buf[:nb_n, :]
+
             if imoist_n == 0:
                 if rank_p == 0:
                     its_out, Z_g, U_g, S_g, T_g = makeoutput(
                         unow_g, snow_g, zhtnow_g, its_out, its_p, Z_g, U_g, S_g, T_g
                     )
             elif imoist_n == 1:
+
+                if rank_p == 0:
+                    qvnow_buf = np.empty((rank_size * nx_p, nz_n))
+                    qcnow_buf = np.empty((rank_size * nx_p, nz_n))
+                    qrnow_buf = np.empty((rank_size * nx_p, nz_n))
+                    tot_prec_buf = np.empty((rank_size, nx_p))
+                    prec_buf = np.empty((rank_size, nx_p))
+                else:
+                    qvnow_buf = None
+                    qcnow_buf = None
+                    qrnow_buf = None
+                    tot_prec_buf = None
+                    prec_buf = None
+
+                comm.Gather(qvnow_p[nb_n:-nb_n, :], qvnow_buf, root=0)
+                comm.Gather(qcnow_p[nb_n:-nb_n, :], qcnow_buf, root=0)
+                comm.Gather(qrnow_p[nb_n:-nb_n, :], qrnow_buf, root=0)
+                comm.Gather(tot_prec_p[nb_n:-nb_n, :], tot_prec_buf, root=0)
+                comm.Gather(prec_p[nb_n:-nb_n, :], prec_buf, root=0)
+
+                if rank_p == 0:
+                    qvnow_g[:nb_n, :] = qvnow_buf[:-nb_n, :]
+                    qvnow_g[nb_n:-nb_n, :] = qvnow_buf[:, :]
+                    qvnow_g[-nb_n:, :] = qvnow_buf[:nb_n, :]
+
+                    qcnow_g[:nb_n, :] = qcnow_buf[:-nb_n, :]
+                    qcnow_g[nb_n:-nb_n, :] = qcnow_buf[:, :]
+                    qcnow_g[-nb_n:, :] = qcnow_buf[:nb_n, :]
+
+                    qrnow_g[:nb_n, :] = qrnow_buf[:-nb_n, :]
+                    qrnow_g[nb_n:-nb_n, :] = qrnow_buf[:, :]
+                    qrnow_g[-nb_n:, :] = qrnow_buf[:nb_n, :]
+
+                    tot_prec_g[nb_n:] = tot_prec_buf.flatten()
+                    tot_prec_g[-nb_n:] = tot_prec_g[nb_n:2*nb_n]
+                    tot_prec_g[:nb_n] = tot_prec_g[-2*nb_n:-nb_n]
+
+                    prec_g[nb_n:] = prec_buf.flatten()
+                    prec_g[-nb_n:] = prec_buf[nb_n:2*nb_n]
+                    prec_g[:nb_n] = prec_buf[-2*nb_n:-nb_n]
+
                 if imicrophys_n == 0 or imicrophys_n == 1:
                     if idthdt_n == 0:
-                        # TODO: gather qvnow_g, qcnow_g, qrnow_g, tot_prec_g, prec_g
                         if rank_p == 0:
                             its_out, Z_g, U_g, S_g, T_g, QC_g, QV_g, QR_g, TOT_PREC_g, PREC_g = makeoutput(
                                 unow_g,
@@ -992,8 +1066,19 @@ def main():
                                 PREC=PREC_g,
                             )
                     elif idthdt_n == 1:
-                        # TODO: gather qvnow_g, qcnow_g, qrnow_g, tot_prec_g, prec_g, dthetadt_g
                         if rank_p == 0:
+                            dthetadt_buf = np.empty((rank_size * nx_p, nz1_n))
+                        else:
+                            dthetadt_buf = None
+
+                        comm.Gather(
+                            dthetadt_p[nb_n:-nb_n, :], dthetadt_buf, root=0)
+
+                        if rank_p == 0:
+                            dthetadt_g[:nb_n, :] = dthetadt_buf[:-nb_n, :]
+                            dthetadt_g[nb_n:-nb_n, :] = dthetadt_buf[:, :]
+                            dthetadt_g[-nb_n:, :] = dthetadt_buf[:nb_n, :]
+
                             its_out, Z_g, U_g, S_g, T_g, QC_g, QV_g, QR_g, TOT_PREC_g, PREC_g, DTHETADT_g = makeoutput(
                                 unow_g,
                                 snow_g,
@@ -1018,8 +1103,27 @@ def main():
                                 DTHETADT=DTHETADT_g,
                             )
                 if imicrophys_n == 2:
+                    # TODO: gather nrnow_g, ncnow_g
+                    if rank_p == 0:
+                        nrnow_buf = np.empty((rank_size * nx_p, nz_n))
+                        ncnow_buf = np.empty((rank_size * nx_p, nz_n))
+                    else:
+                        nrnow_buf = None
+                        ncnow_buf = None
+
+                    comm.Gather(nrnow_p[nb_n:-nb_n, :], nrnow_buf, root=0)
+                    comm.Gather(ncnow_p[nb_n:-nb_n, :], ncnow_buf, root=0)
+
+                    if rank_p == 0:
+                        nrnow_g[:nb_n, :] = nrnow_buf[:-nb_n, :]
+                        nrnow_g[nb_n:-nb_n, :] = nrnow_buf[:, :]
+                        nrnow_g[-nb_n:, :] = nrnow_buf[:nb_n, :]
+
+                        ncnow_g[:nb_n, :] = ncnow_buf[:-nb_n, :]
+                        ncnow_g[nb_n:-nb_n, :] = ncnow_buf[:, :]
+                        ncnow_g[-nb_n:, :] = ncnow_buf[:nb_n, :]
+
                     if idthdt_n == 0:
-                        # TODO: gather qvnow_g, qcnow_g, qrnow_g, tot_prec_g, prec_g, nrnow_g, ncnow_g
                         if rank_p == 0:
                             its_out, Z_g, U_g, S_g, T_g, QC_g, QV_g, QR_g, TOT_PREC_g, PREC_g, NR_g, NC_g = makeoutput(
                                 unow_g,
@@ -1047,7 +1151,6 @@ def main():
                                 NC=NC_g,
                             )
                     if idthdt_n == 1:
-                        # TODO: gather qvnow_g, qcnow_g, qrnow_g, tot_prec_g, prec_g, nrnow_g, ncnow_g
                         if rank_p == 0:
                             its_out, Z_g, U_g, S_g, T_g, QC_g, QV_g, QR_g, TOT_PREC_g, PREC_g, NR_g, NC_g, DTHETADT_g = makeoutput(
                                 unow_g,
@@ -1113,6 +1216,8 @@ def main():
         exchange_borders(mtg_p, tag=20)
         exchange_borders(prs_p, tag=23)
 
+        # TODO: complete missing
+
     # -----------------------------------------------------------------------------
     # ########## END OF TIME LOOP ################################################
     if idbg_n > 0:
@@ -1122,63 +1227,64 @@ def main():
     print("Elapsed computation time without writing: %g s\n" % (tt - t0_p))
 
     # endregion
-
+    # TODO: gather
     # region Write output
     # ---------------------------------
     print("Start wrtiting output.\n")
-    if imoist_n == 0:
-        write_output(nout, Z, U, S, T)
-    elif imicrophys_n == 0 or imicrophys_n == 1:
-        if idthdt_n == 1:
-            write_output(
-                nout,
-                Z,
-                U,
-                S,
-                T,
-                QV=QV,
-                QC=QC,
-                QR=QR,
-                PREC=PREC,
-                TOT_PREC=TOT_PREC,
-                dt_nHETAdt_n=DTHETADT_n,
-            )
-        else:
-            write_output(
-                nout, Z, U, S, T, QV=QV, QC=QC, QR=QR, PREC=PREC, TOT_PREC=TOT_PREC
-            )
-    elif imicrophys_n == 2:
-        if idthdt_n == 1:
-            write_output(
-                nout,
-                Z,
-                U,
-                S,
-                T,
-                QV=QV,
-                QC=QC,
-                QR=QR,
-                PREC=PREC,
-                TOT_PREC=TOT_PREC,
-                NR=NR,
-                NC=NC,
-                dt_nHETAdt_n=DTHETADT_n,
-            )
-        else:
-            write_output(
-                nout,
-                Z,
-                U,
-                S,
-                T,
-                QV=QV,
-                QC=QC,
-                QR=QR,
-                PREC=PREC,
-                TOT_PREC=TOT_PREC,
-                NR=NR,
-                NC=NC,
-            )
+    if rank_p == 0:
+        if imoist_n == 0:
+            write_output(nout, Z_g, U_g, S_g, T_g)
+        elif imicrophys_n == 0 or imicrophys_n == 1:
+            if idthdt_n == 1:
+                write_output(
+                    nout,
+                    Z_g,
+                    U_g,
+                    S_g,
+                    T_g,
+                    QV=QV_g,
+                    QC=QC_g,
+                    QR=QR_g,
+                    PREC=PREC_g,
+                    TOT_PREC=TOT_PREC_g,
+                    DTHETADT=DTHETADT_g,
+                )
+            else:
+                write_output(
+                    nout, Z_g, U_g, S_g, T_g, QV=QV_g, QC=QC_g, QR=QR_g, PREC=PREC_g, TOT_PREC=TOT_PREC_g
+                )
+        elif imicrophys_n == 2:
+            if idthdt_n == 1:
+                write_output(
+                    nout,
+                    Z_g,
+                    U_g,
+                    S_g,
+                    T_g,
+                    QV=QV_g,
+                    QC=QC_g,
+                    QR=QR_g,
+                    PREC=PREC_g,
+                    TOT_PREC=TOT_PREC_g,
+                    NR=NR_g,
+                    NC=NC_g,
+                    DTHETADT=DTHETADT_g,
+                )
+            else:
+                write_output(
+                    nout,
+                    Z_g,
+                    U_g,
+                    S_g,
+                    T_g,
+                    QV=QV_g,
+                    QC=QC_g,
+                    QR=QR_g,
+                    PREC=PREC_g,
+                    TOT_PREC=TOT_PREC_g,
+                    NR=NR_g,
+                    NC=NC_g,
+                )
     # endregion
     t1 = tm()
 

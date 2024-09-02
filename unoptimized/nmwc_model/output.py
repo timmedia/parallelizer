@@ -18,7 +18,7 @@ from nmwc_model.namelist import (
     thl,
     topomx,
     topowd,
-    imoist_n,
+    imoist,
     imicrophys,
     idthdt,
 )
@@ -158,7 +158,7 @@ def makeoutput(
     S[its_out, :, :] = np.swapaxes(snow[i, :], 0, 1)
 
     # if imoist == 1 and imicrophys != 0:
-    if imoist_n == 1:
+    if imoist == 1:
         QV[its_out, :, :] = np.swapaxes(qvnow[i, :], 0, 1)
         QC[its_out, :, :] = np.swapaxes(qcnow[i, :], 0, 1)
         QR[its_out, :, :] = np.swapaxes(qrnow[i, :], 0, 1)
@@ -171,9 +171,9 @@ def makeoutput(
             NR[its_out, :, :] = np.swapaxes(nrnow[i, :], 0, 1)
             NC[its_out, :, :] = np.swapaxes(ncnow[i, :], 0, 1)
 
-    if imoist_n == 0:
+    if imoist == 0:
         return its_out, Z, U, S, T
-    elif imoist_n == 1:
+    elif imoist == 1:
         if imicrophys == 0 or imicrophys == 1:
             if idthdt == 1:
                 return its_out, Z, U, S, T, QC, QV, QR, TOT_PREC, PREC, DTHETADT
@@ -266,7 +266,7 @@ def write_output(
     )
 
     # write data to binary
-    if imoist_n == 0:
+    if imoist == 0:
         np.savez(
             out_fname,
             u00=u00,
@@ -285,7 +285,7 @@ def write_output(
             isentropic_density=S,
         )
     else:
-        if imoist_n == 1:
+        if imoist == 1:
             np.savez(
                 out_fname,
                 u00=u00,

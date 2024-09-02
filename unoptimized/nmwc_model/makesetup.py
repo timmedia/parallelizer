@@ -13,7 +13,7 @@ from nmwc_model.namelist import (
     g,
     idbg,
     imicrophys,
-    imoist_n,
+    imoist,
     ishear,
     k_shl,
     k_sht,
@@ -170,10 +170,10 @@ def makeprofile(
     rh0 = np.zeros(nz)
     qv0 = np.zeros(nz)
 
-    if imoist_n == 1:
+    if imoist == 1:
         qc0 = np.zeros(nz)
         qr0 = np.zeros(nz)
-    if imoist_n == 1 and imicrophys == 2:
+    if imoist == 1 and imicrophys == 2:
         nc0 = np.zeros(nz)
         nr0 = np.zeros(nz)
 
@@ -241,7 +241,7 @@ def makeprofile(
     # Upstream profile for moisture (unstaggered)
     # -------------------------------------------
 
-    if imoist_n == 1:
+    if imoist == 1:
         # *** Exercise
         #  Initial Moisture profile ***
         # *** define new indices and create the profile ***
@@ -278,7 +278,7 @@ def makeprofile(
     uold = u0 * np.ones_like(uold, dtype=float)
     unow = u0 * np.ones_like(uold, dtype=float)
 
-    if imoist_n == 1:
+    if imoist == 1:
         # if imicrophys!=None:
         qvold = qv0 * np.ones_like(qvold, dtype=float)
         qvnow = qv0 * np.ones_like(qvold, dtype=float)
@@ -300,7 +300,7 @@ def makeprofile(
             nrold = nr0 * np.ones_like(nrold, dtype=float)
             nrnow = nr0 * np.ones_like(nrold, dtype=float)
 
-    if imoist_n == 0:
+    if imoist == 0:
         return th0, exn0, prs0, z0, mtg0, s0, u0, sold, snow, uold, unow, mtg, mtgnew
     else:
         if imicrophys == 0 or imicrophys == 1:
