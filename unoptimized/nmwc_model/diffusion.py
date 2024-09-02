@@ -5,7 +5,7 @@ from nmwc_model.namelist import (
     nb,
     nx,
     imoist_diff,
-    imoist,
+    imoist_n,
     imicrophys,
     irelax,
 )  # import global variables
@@ -83,7 +83,7 @@ def horizontal_diffusion(
                               snew[i, :] + snew[i + 1, :]) / 4.0
         ) * sel[i, :] + snew[i, :] * ~sel[i, :]
 
-        if imoist == 1 and imoist_diff == 1:
+        if imoist_n == 1 and imoist_diff == 1:
             qvnew[i, :] = (
                 qvnew[i, :]
                 + taumat[i, :]
@@ -125,7 +125,7 @@ def horizontal_diffusion(
         unew = periodic(unew, nx, nb)
         snew = periodic(snew, nx, nb)
 
-        if imoist == 1 and imoist_diff == 1:
+        if imoist_n == 1 and imoist_diff == 1:
             qvnew = periodic(qvnew, nx, nb)
             qcnew = periodic(qcnew, nx, nb)
             qrnew = periodic(qrnew, nx, nb)
@@ -134,7 +134,7 @@ def horizontal_diffusion(
                 ncnew = periodic(ncnew, nx, nb)
                 nrnew = periodic(nrnew, nx, nb)
 
-    if imoist == 0:
+    if imoist_n == 0:
         return unew, snew
     elif imicrophys == 0 or imicrophys == 1:
         return unew, snew, qvnew, qcnew, qrnew

@@ -13,7 +13,7 @@ from nmwc_model.namelist import (
     g,
     idbg,
     imicrophys,
-    imoist,
+    imoist_n,
     ishear,
     k_shl,
     k_sht,
@@ -49,10 +49,9 @@ def maketopo(topo, nxb):
     x = np.arange(0, nxb, dtype=np.float64)
     x0 = (nxb - 1) / 2.0 + 1
     x = (x + 1 - x0) * dx
-    
 
     topomx2, topomx3, topomx4 = 1000, 500, 500
-    x0_2,x0_3, x0_4 = -900000, 0, 1400000 
+    x0_2, x0_3, x0_4 = -900000, 0, 1400000
     print(x0_4)
     # Calculate Gaussian functions
     toponf1 = topomx * np.exp(-(x / float(topowd)) ** 2)
@@ -171,10 +170,10 @@ def makeprofile(
     rh0 = np.zeros(nz)
     qv0 = np.zeros(nz)
 
-    if imoist == 1:
+    if imoist_n == 1:
         qc0 = np.zeros(nz)
         qr0 = np.zeros(nz)
-    if imoist == 1 and imicrophys == 2:
+    if imoist_n == 1 and imicrophys == 2:
         nc0 = np.zeros(nz)
         nr0 = np.zeros(nz)
 
@@ -226,12 +225,12 @@ def makeprofile(
         #
 
         # # *** edit here ***
-        k_low = np.arange(0,k_shl)
-        k_between = np.arange(k_shl,k_sht)
-        k_high = np.arange(k_sht,nz)
+        k_low = np.arange(0, k_shl)
+        k_between = np.arange(k_shl, k_sht)
+        k_high = np.arange(k_sht, nz)
 
         u0[k_low] = u00_sh
-        u0[k_between] = np.linspace(u00_sh,u00, len(np.arange(k_shl,k_sht)))
+        u0[k_between] = np.linspace(u00_sh, u00, len(np.arange(k_shl, k_sht)))
         u0[k_high] = u00
         #
         # *** Exercise 3.3 Downslope windstorm ***
@@ -242,8 +241,8 @@ def makeprofile(
     # Upstream profile for moisture (unstaggered)
     # -------------------------------------------
 
-    if imoist == 1:
-        # *** Exercise 
+    if imoist_n == 1:
+        # *** Exercise
         #  Initial Moisture profile ***
         # *** define new indices and create the profile ***
         # *** for rh0; then use function rrmixv1 to compute qv0 ***
@@ -252,12 +251,13 @@ def makeprofile(
         # *** edit here ***
         kc = 12
         kw = 10
-        k_between = np.arange(kc-kw,kc+kw)
+        k_between = np.arange(kc-kw, kc+kw)
         rh_max = 0.98
         rh0[k_between] = rh_max*np.cos(abs(k_between - kc)/kw*np.pi/2)**2
 
         k = np.arange(0, nz)
-        qv0[k] = rrmixv1(0.5*(prs0[k]+prs0[k+1])/100, 0.5*(th0[k]/cp*exn0[k]+th0[k+1]/cp*exn0[k+1]),rh0[k],2)
+        qv0[k] = rrmixv1(0.5*(prs0[k]+prs0[k+1])/100, 0.5 *
+                         (th0[k]/cp*exn0[k]+th0[k+1]/cp*exn0[k+1]), rh0[k], 2)
 
         #
         # *** Exercise 4.1 Initial Moisture profile ***
@@ -278,7 +278,7 @@ def makeprofile(
     uold = u0 * np.ones_like(uold, dtype=float)
     unow = u0 * np.ones_like(uold, dtype=float)
 
-    if imoist == 1:
+    if imoist_n == 1:
         # if imicrophys!=None:
         qvold = qv0 * np.ones_like(qvold, dtype=float)
         qvnow = qv0 * np.ones_like(qvold, dtype=float)
@@ -300,7 +300,7 @@ def makeprofile(
             nrold = nr0 * np.ones_like(nrold, dtype=float)
             nrnow = nr0 * np.ones_like(nrold, dtype=float)
 
-    if imoist == 0:
+    if imoist_n == 0:
         return th0, exn0, prs0, z0, mtg0, s0, u0, sold, snow, uold, unow, mtg, mtgnew
     else:
         if imicrophys == 0 or imicrophys == 1:

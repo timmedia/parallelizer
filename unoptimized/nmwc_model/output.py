@@ -18,7 +18,7 @@ from nmwc_model.namelist import (
     thl,
     topomx,
     topowd,
-    imoist,
+    imoist_n,
     imicrophys,
     idthdt,
 )
@@ -158,7 +158,7 @@ def makeoutput(
     S[its_out, :, :] = np.swapaxes(snow[i, :], 0, 1)
 
     # if imoist == 1 and imicrophys != 0:
-    if imoist == 1:
+    if imoist_n == 1:
         QV[its_out, :, :] = np.swapaxes(qvnow[i, :], 0, 1)
         QC[its_out, :, :] = np.swapaxes(qcnow[i, :], 0, 1)
         QR[its_out, :, :] = np.swapaxes(qrnow[i, :], 0, 1)
@@ -171,9 +171,9 @@ def makeoutput(
             NR[its_out, :, :] = np.swapaxes(nrnow[i, :], 0, 1)
             NC[its_out, :, :] = np.swapaxes(ncnow[i, :], 0, 1)
 
-    if imoist == 0:
+    if imoist_n == 0:
         return its_out, Z, U, S, T
-    elif imoist == 1:
+    elif imoist_n == 1:
         if imicrophys == 0 or imicrophys == 1:
             if idthdt == 1:
                 return its_out, Z, U, S, T, QC, QV, QR, TOT_PREC, PREC, DTHETADT
@@ -241,7 +241,7 @@ def write_output(
         print("Output contains %u output steps\n" % nout)
 
     # destagger height
-    Z = 0.5 * (Z[:, 0:nz, :] + Z[:, 1 : nz + 1, :])
+    Z = 0.5 * (Z[:, 0:nz, :] + Z[:, 1: nz + 1, :])
     x_out = dx * np.arange(0, nx) / 1000.0
     z_out = Z[0, :, 0] / 1000.0
 
@@ -266,7 +266,7 @@ def write_output(
     )
 
     # write data to binary
-    if imoist == 0:
+    if imoist_n == 0:
         np.savez(
             out_fname,
             u00=u00,
@@ -285,7 +285,7 @@ def write_output(
             isentropic_density=S,
         )
     else:
-        if imoist == 1:
+        if imoist_n == 1:
             np.savez(
                 out_fname,
                 u00=u00,
@@ -446,30 +446,30 @@ def write_output(
 
 # create Z, U, S variables
 # heights     = ncfile.createVariable('height',np.dtype('float32').char,('time',
-#'z','x'))
+# 'z','x'))
 # velocity    = ncfile.createVariable('horizontal_velocity',
 # np.dtype('float32').char,('time','z',
-#'x'))
+# 'x'))
 # isendens    = ncfile.createVariable('isentropic_density',
 # np.dtype('float32').char,('time','z',
-#'x'))
+# 'x'))
 # if imoist == 1:
 # hum          = ncfile.createVariable('specific_humidity',np.dtype('float32').char,('time',
-#'z','x'))
+# 'z','x'))
 # cloud_water  = ncfile.createVariable('specific_cloud_liquid_water_content',np.dtype('float32').char,('time',
-#'z','x'))
+# 'z','x'))
 # rain_water  = ncfile.createVariable('specific_rain_water_content',np.dtype('float32').char,('time',
-#'z','x'))
+# 'z','x'))
 # tot_precip   = ncfile.createVariable('accumulated_precipitation',np.dtype('float32').char,('time','x'))
 # precip       = ncfile.createVariable('precipitation_rate',np.dtype('float32').char,('time','x'))
 # if imicrophys == 2:
 # num_rain          = ncfile.createVariable('rain_number_density',np.dtype('float32').char,('time',
-#'z','x'))
+# 'z','x'))
 # num_cloud  = ncfile.createVariable('cloud_number_density',np.dtype('float32').char,('time',
-#'z','x'))
+# 'z','x'))
 # if idthdt == 1:
 # dtheta  = ncfile.createVariable('latent_heat_tendency',np.dtype('float32').char,('time',
-#'z','x'))
+# 'z','x'))
 # set units attribute
 # heights.units   = 'm'
 # velocity.units  = 'm/s'
