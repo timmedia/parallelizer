@@ -54,12 +54,12 @@ def diag_montgomery(prs, mtg, th0, topo, topofact):
     exn = cp*(prs/pref)**rdcp
     # Add lower boundary condition at height mtg[:,0]
     # *** edit here ***
-    mtg[:,0] = topo.squeeze()*topofact*g + th0[0]*exn[:,0] + dth/2*exn[:,0]
+    mtg[:, 0] = topo.squeeze()*topofact*g + th0[0]*exn[:, 0] + dth/2*exn[:, 0]
 
     # Integration loop upwards
     # *** edit here ***
-    for k in range(1,nz):
-        mtg[:,k] = mtg[:,k-1] + dth*exn[:,k]
+    for k in range(1, nz):
+        mtg[:, k] = mtg[:, k-1] + dth*exn[:, k]
     #
     # *** Exercise 2.2 Diagnostic computation  ***
 
@@ -107,12 +107,12 @@ def diag_pressure(prs0, prs, snew):
 
     # Upper boundary condition
     # *** edit here ***
-    prs[:,-1] = prs0[-1]
+    prs[:, -1] = prs0[-1]
     # Integration loop downwards
     # *** edit here ***
-        
-    for k in range(0,nz)[::-1]:
-        prs[:,k]  = prs[:,k+1] + dth*snew[:,k]*g
+
+    for k in range(0, nz)[::-1]:
+        prs[:, k] = prs[:, k+1] + dth*snew[:, k]*g
     #
     # *** Exercise 2.2 Diagnostic computation of pressure ***
 
@@ -180,7 +180,8 @@ def diag_density_and_temperature(s, exn, zht, th0):
     rho[:, k] = s * (th[:, k + 1] - th[:, k]) / (zht[:, k + 1] - zht[:, k])
 
     temp = np.zeros_like(s)
-    temp[:, k] = 0.5 * (th[:, k] * exn[:, k] + th[:, k + 1] * exn[:, k + 1]) / cp
+    temp[:, k] = 0.5 * (th[:, k] * exn[:, k] +
+                        th[:, k + 1] * exn[:, k + 1]) / cp
 
     return rho, temp
 

@@ -81,22 +81,26 @@ rank_size = comm.Get_size()
 assert nx_n % rank_size == 0, "Number of grid points_n must be compatible with rank size"
 
 
-def exchange_borders(data, tag: int):
+def exchange_borders(data: np.ndarray, tag: int):
     """Exchange broders with next rank for 2-dimensional data set `data`. (scattered along first axis)"""
     left_rank = (rank_p - 1) % rank_size
     right_rank = (rank_p + 1) % rank_size
 
-    send_to_right = data[-2*nb_n:-nb_n]
-    send_to_left = data[nb_n:2*nb_n]
+    send_to_right = data[-2*nb_n:-nb_n, :]
+    send_to_left = data[nb_n:2*nb_n, :]
 
-    new_left_border = np.empty(nb_n)
-    new_right_border = np.empty(nb_n)
+    new_left_border = np.empty((nb_n, data.shape[1]), dtype=data.dtype)
+    new_right_border = np.empty((nb_n, data.shape[1]), dtype=data.dtype)
 
+    # send to left, receive from right
     comm.Sendrecv(sendbuf=send_to_left, dest=left_rank, sendtag=rank_p * 10_000 + 100 * left_rank +
-                  tag, recvbuf=new_right_border, source=left_rank, recvtag=left_rank * 10_000 + 100 * rank_p + tag)
+                  tag, recvbuf=new_right_border, source=right_rank, recvtag=right_rank * 10_000 + 100 * rank_p + tag)
 
+    # send to right, receive from left
     comm.Sendrecv(sendbuf=send_to_right, dest=right_rank, sendtag=rank_p * 10_000 + 100 * right_rank +
-                  tag, recvbuf=new_left_border, source=left_rank, recvtag=right_rank * 10_000 + 100 * rank_p + tag)
+                  tag, recvbuf=new_left_border, source=left_rank, recvtag=left_rank * 10_000 + 100 * rank_p + tag)
+    data[:nb_n, :] = new_left_border[:, :]
+    data[-nb_n:, :] = new_right_border[:, :]
 
 
 def initialize_gathered_variables(nout: int):
