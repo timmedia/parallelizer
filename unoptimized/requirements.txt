@@ -3,4 +3,3 @@ ipython
 matplotlib
 numpy
 pytest
-mpi4py

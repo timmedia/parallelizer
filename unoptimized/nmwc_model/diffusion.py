@@ -13,7 +13,7 @@ from nmwc_model.boundary import periodic
 
 
 def horizontal_diffusion(
-    tau, unew, snew, qvnew=None, qcnew=None, qrnew=None, ncnew=None, nrnew=None
+    tau, unew, snew, qvnew=None, qcnew=None, qrnew=None, ncnew=None, nrnew=None, nx=nx
 ):
     """ Horizontal diffusion.
 
@@ -72,13 +72,15 @@ def horizontal_diffusion(
         i = np.arange(nb, nx + 1 + nb)
         unew[i, :] = (
             unew[i, :]
-            + taumat[i, :] * (unew[i - 1, :] - 2.0 * unew[i, :] + unew[i + 1, :]) / 4.0
+            + taumat[i, :] * (unew[i - 1, :] - 2.0 *
+                              unew[i, :] + unew[i + 1, :]) / 4.0
         ) * sel[i, :] + unew[i, :] * ~sel[i, :]
 
         i = np.arange(nb, nx + nb)
         snew[i, :] = (
             snew[i, :]
-            + taumat[i, :] * (snew[i - 1, :] - 2.0 * snew[i, :] + snew[i + 1, :]) / 4.0
+            + taumat[i, :] * (snew[i - 1, :] - 2.0 *
+                              snew[i, :] + snew[i + 1, :]) / 4.0
         ) * sel[i, :] + snew[i, :] * ~sel[i, :]
 
         if imoist == 1 and imoist_diff == 1:
