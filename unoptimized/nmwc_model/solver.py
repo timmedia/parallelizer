@@ -82,7 +82,7 @@ assert nx_n % rank_size == 0, "Number of grid points_n must be compatible with r
 
 
 def exchange_borders(data: np.ndarray, tag: int):
-    """Exchange broders with next rank for 2-dimensional data set `data`. (scattered along first axis)"""
+    """Exchange borders with neighboring processes for 2-dimensional dataset `data`. (scattered along first axis)"""
     left_rank = (rank_p - 1) % rank_size
     right_rank = (rank_p + 1) % rank_size
 
@@ -92,11 +92,11 @@ def exchange_borders(data: np.ndarray, tag: int):
     new_left_border = np.empty((nb_n, data.shape[1]), dtype=data.dtype)
     new_right_border = np.empty((nb_n, data.shape[1]), dtype=data.dtype)
 
-    # send to left, receive from right
+    # Send to left, receive from right
     comm.Sendrecv(sendbuf=send_to_left, dest=left_rank, sendtag=rank_p * 10_000 + 100 * left_rank +
                   tag, recvbuf=new_right_border, source=right_rank, recvtag=right_rank * 10_000 + 100 * rank_p + tag)
 
-    # send to right, receive from left
+    # Send to right, receive from left
     comm.Sendrecv(sendbuf=send_to_right, dest=right_rank, sendtag=rank_p * 10_000 + 100 * right_rank +
                   tag, recvbuf=new_left_border, source=left_rank, recvtag=left_rank * 10_000 + 100 * rank_p + tag)
     data[:nb_n, :] = new_left_border[:, :]
@@ -235,10 +235,7 @@ def initialize_gathered_variables(nout: int):
 
     # endregion
 
-    # Set initial conditions
-    # -----------------------------------------------------------------------------
-
-    # region Run `makeprofile`
+    # region Set initial conditions
     if idbg_n == 1:
         print("Setting initial conditions ...\n")
 
@@ -339,7 +336,7 @@ def initialize_gathered_variables(nout: int):
 
     # endregion
 
-    # region Heigh-dependent settings
+    # region Height-dependent settings
 
     # calculate geometric height (staggered)
     zhtnow_g = diag_height(
@@ -488,13 +485,18 @@ def initialize_gathered_variables(nout: int):
 
 
 def main():
+    # region Setup
     # Print the full precision
-    # DL: REMOVE FOR STUDENT VERSION
     np.set_printoptions(threshold=sys.maxsize)
 
     # Define physical fields
-    # -------------------------
     nx_p = nx_n // rank_size
+
+    # increase number of output steps by 1 for initial profile
+    nout = nout_n
+    if iiniout_n == 1:
+        nout += 1
+    # endregion
 
     # region Allocate process-specific variables
     sold_p = np.empty((nx_p + 2 * nb_n, nz_n))
@@ -529,12 +531,8 @@ def main():
     prec_p = np.empty(nx_p + 2 * nb_n)
     # endregion
 
-    # increase number of output steps by 1 for initial profile
-    nout = nout_n
-    if iiniout_n == 1:
-        nout += 1
-
     if rank_p == 0:
+        # region Distribute slices to processes
         (
             sold_g, snow_g, snew_g, S_g,
             uold_g, unow_g, unew_g, U_g,
@@ -549,7 +547,6 @@ def main():
             topo_g, zhtold_g, zhtnow_g, Z_g, th0_g, dthetadtbnd1, dthetadtbnd2
         ) = initialize_gathered_variables(nout)
 
-        # region Distribute slices to processes
         for i in range(1, rank_size):
             start_index = i * nx_p
             end_index = (i + 1) * nx_p + 2 * nb_n
@@ -686,18 +683,13 @@ def main():
         comm.Recv(prec_p, source=0, tag=rank_p * 1000 + 29)
         # endregion
 
-    # ########## TIME LOOP #######################################################
-    # ----------------------------------------------------------------------------
-    # Loop over all time steps
-    # ----------------------------------------------------------------------------
-
-    # region Time loop
+    # region Loop over all time steps
     if idbg_n == 1 and rank_p == 0:
         print("Starting time loop ...\n")
 
     t0_p = tm()
     for its_p in range(1, int(nts_n + 1)):
-        # calculate time
+        # region Calculate and log time
         time_p = its_p * dt_n
 
         if itime_n == 1:
@@ -706,12 +698,11 @@ def main():
                 print("Working on timestep %g; time = %g s; process = %g\n" %
                       (its_p, time_p, rank_p))
                 print("========================================================\n")
+        # endregion
 
+        # region Special treatment of first time step
         # initially increase height of topography only slowly
         topofact_p: float = min(1.0, float(time_p) / topotim_n)
-
-        # Special treatment of first time step
-        # -------------------------------------------------------------------------
         if its_p == 1:
             dtdx_p: float = dt_n / dx_n / 2.0
             dthetadt_p = None
@@ -722,16 +713,14 @@ def main():
                 print("Using Euler forward step for 1. step ...\n")
         else:
             dtdx_p: float = dt_n / dx_n
+        # endregion
 
-        # *** Exercise 2.1 isentropic mass density ***
-        # *** time step for isentropic mass density ***
+        # region Time step for isentropic mass density
         snew_p = prog_isendens(sold_p, snow_p, unow_p,
                                dtdx_p, dthetadt=dthetadt_p, nx=nx_p)
-        #
-        # *** Exercise 2.1 isentropic mass density ***
+        # endregion
 
-        # *** Exercise 4.1 / 5.1 moisture ***
-        # *** time step for moisture scalars ***
+        # region Time step for moisture scalars
         if imoist_n == 1:
             if idbg_n == 1:
                 print("Add function call to prog_moisture")
@@ -741,29 +730,23 @@ def main():
             if imicrophys_n == 2:
                 ncnew_p, nrnew_p = prog_numdens(
                     unow_p, ncold_p, nrold_p, ncnow_p, nrnow_p, dtdx_p, dthetadt=dthetadt_p, nx=nx_p)
+        # endregion
 
-        #
-        # *** Exercise 4.1 / 5.1 moisture scalars ***
-
-        # *** Exercise 2.1 velocity ***
-        # *** time step for momentum ***
-        #
-
-        # *** edit here ***
+        # region Time step for momentum
         unew_p = prog_velocity(uold_p, unow_p, mtg_p,
                                dtdx_p, dthetadt=dthetadt_p, nx=nx_p)
-        #
-        # *** Exercise 2.1 velocity ***
+        # endregion
 
-        # exchange boundaries if periodic
-        # -------------------------------------------------------------------------
+        # region Exchange boundaries if periodic
         if irelax_n == 0:
             if rank_p == 0:
+                # TODO: fix, this is incorrect syntax
                 snew_p[0:nb_n, :] = comm.Sendrecv(sendbuf=snew_p[nb_n:2*nb_n, :], dest=rank_size - 1,
                                                   sendt_nag=11, recvbuf=None, source=rank_size - 1, recvtag=22)
                 unew_p[0:nb_n, :] = comm.Sendrecv(sendbuf=unew_p[nb_n:2*nb_n, :], dest=rank_size - 1,
                                                   sendt_nag=111, recvbuf=None, source=rank_size - 1, recvtag=222)
             elif rank_p == rank_size - 1:
+                # TODO: fix, this is incorrect syntax
                 snew_p[-nb_n:, :] = comm.Sendrecv(sendbuf=snew_p[-2*nb_n:-nb_n],
                                                   dest=0, sendt_nag=22, recvbuf=None, source=0, recvtag=11)
                 unew_p[-nb_n:, :] = comm.Sendrecv(sendbuf=unew_p[-2*nb_n:-nb_n],
@@ -771,7 +754,7 @@ def main():
 
             if imoist_n == 1:
                 pass
-                # qvnew_p = periodic(qvnew_p, nx_n, nb_n) # TODO
+                qvnew_p = periodic(qvnew_p, nx_n, nb_n)  # TODO
                 # qcnew_p = periodic(qcnew, nx_n, nb_n) # TODO
                 # qrnew_p = periodic(qrnew, nx_n, nb_n) # TODO
 
@@ -780,9 +763,9 @@ def main():
                 pass
                 # ncnew = periodic(ncnew, nx_n, nb_n) # TODO
                 # nrnew = periodic(nrnew, nx_n, nb_n) # TODO
+        # endregion
 
-        # relaxation of prognostic fields
-        # -------------------------------------------------------------------------
+        # region Relaxation of prognostic fields
         if irelax_n == 1:
             if idbg_n == 1:
                 print("Relaxing prognostic fields ...\n")
@@ -799,10 +782,9 @@ def main():
                 pass
                 # ncnew = relax(ncnew, nx_n, nb_n, ncbnd1, ncbnd2) # TODO
                 # nrnew = relax(nrnew, nx_n, nb_n, nrbnd1, nrbnd2) # TODO
+        # endregion
 
-        # Diffusion and gravity wave absorber
-        # ------------------------------------
-
+        # region Diffusion and gravity wave absorber
         if imoist_n == 0:
             [unew_p, snew_p] = horizontal_diffusion(
                 tau_p, unew_p, snew_p, nx=nx_p)
@@ -822,38 +804,25 @@ def main():
                 [unew_p, snew_p, qvnew_p, qcnew_p, qrnew_p] = horizontal_diffusion(
                     tau_p, unew_p, snew_p, qvnew=qvnew_p, qcnew=qcnew_p, qrnew=qrnew_p, nx=nx_p
                 )
+        # endregion
 
-        # *** Exercise 2.2 Diagnostic computation of pressure ***
-        # *** Diagnostic computation of pressure ***
-        #
-
-        # *** edit here ***
+        # region Diagnostic computation of pressure
         prs_p = diag_pressure(prs0_p, prs_p, snew_p)
-        #
-        # *** Exercise 2.2 Diagnostic computation of pressure ***
+        # endregion
 
-        # *** Exercise 2.2 Diagnostic computation of Montgomery ***
-        # *** Calculate Exner function and Montgomery potential ***
-        #
-
-        # *** edit here ***
+        # region Calculate Exner function and Montgomery potential
         exn_p, mtg_p = diag_montgomery(prs_p, mtg_p, th0_p, topo_p, topofact_p)
-        #
-        # *** Exercise 2.2 Diagnostic computation of Montgomery ***
+        # endregion
 
-        # Calculation of geometric height (staggered)
+        # region Calculation of geometric height (staggered)
         # needed for output and microphysics schemes
-        # ---------------------------------
         zhtold_p[...] = zhtnow_p[...]
         zhtnow_p = diag_height(prs_p, exn_p, zhtnow_p,
                                th0_p, topo_p, topofact_p)
+        # endregion
 
         if imoist_n == 1:
-            # *** Exercise 4.1 Moisture ***
-            # *** Clipping of negative values ***
-            # *** edit here ***
-            #
-
+            # region Moisture: Clipping of negative values
             if idbg_n == 1:
                 print("Implement moisture clipping")
             qvnew_p[qvnew_p < 0] = 0
@@ -863,35 +832,22 @@ def main():
             if imicrophys_n == 2:
                 ncnew_p[ncnew_p < 0] = 0
                 nrnew_p[nrnew_p < 0] = 0
-
-            #
-            # *** Exercise 4.1 Moisture ***
+            # endregion
 
         if imoist_n == 1 and imicrophys_n == 1:
-            # *** Exercise 4.2 Kessler ***
-            # *** Kessler scheme ***
-            # *** edit here ***
-            #
-
+            # region Kessler scheme ***
             if idbg_n == 1:
                 print("Add function call to Kessler microphysics")
             [lheat, qvnew_p, qcnew_p, qrnew_p, prec_p, prec_tot_p] = kessler(
                 snew_p, qvnew_p, qcnew_p, qrnew_p, prs_p, exn_p, zhtnow_p, th0_p, prec_p, tot_prec_p)
-
-            #
-            # *** Exercise 4.2 Kessler ***
+            # endregion
         elif imoist_n == 1 and imicrophys_n == 2:
-            # *** Exercise 5.1 Two Moment Scheme ***
-            # *** Two Moment Scheme ***
-            # *** edit here ***
-            #
-
+            # region Two Moment Scheme
             if idbg_n == 1:
                 print("Add function call to two moment microphysics")
             [lheat, qvnew_p, qcnew_p, qrnew_p, tot_prec_p, prec_p, ncnew_p, nrnew_p] = seifert(
                 unew_p, th0_p, prs_p, snew_p, qvnew_p, qcnew_p, qrnew_p, exn_p, zhtold_p, zhtnow_p, tot_prec_p, prec_p, ncnew_p, nrnew_p, dthetadt_n)
-            #
-            # *** Exercise 5.1 Two Moment Scheme ***
+            # endregion
 
         if imoist_n == 1 and imicrophys_n > 0:
             if idthdt_n == 1:
@@ -1231,9 +1187,9 @@ def main():
     print("Elapsed computation time without writing: %g s\n" % (tt - t0_p))
 
     # endregion
-    # TODO: gather
+
     # region Write output
-    # ---------------------------------
+    # TODO: gather
     print("Start wrtiting output.\n")
     if rank_p == 0:
         if imoist_n == 0:
@@ -1290,10 +1246,12 @@ def main():
                     NC=NC_g,
                 )
     # endregion
-    t1 = tm()
 
+    # region Benchmarking
+    t1 = tm()
     if itime_n == 1:
         print("Total elapsed computation time: %g s\n" % (t1 - t0_p))
+    # endregion
 
 
 if __name__ == '__main__':
