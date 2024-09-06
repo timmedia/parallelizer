@@ -4,8 +4,8 @@ import numpy as np
 from nmwc_model.namelist import (
     idbg,
     idthdt,
-    nx,
-    nxb,
+    nx as _nx,
+    nxb as _nxb,
     nb,
     nz,
     dth,
@@ -13,7 +13,7 @@ from nmwc_model.namelist import (
 )  # global variables
 
 
-def prog_isendens(sold, snow, unow, dtdx, dthetadt=None, nx=nx):
+def prog_isendens(sold, snow, unow, dtdx, dthetadt=None, nx=_nx):
     """ Prognostic step for the isentropic mass density.
 
     Parameters
@@ -60,7 +60,7 @@ def prog_isendens(sold, snow, unow, dtdx, dthetadt=None, nx=nx):
     return snew
 
 
-def prog_velocity(uold, unow, mtg, dtdx, dthetadt=None, nx=nx):
+def prog_velocity(uold, unow, mtg, dtdx, dthetadt=None, nx=_nx):
     """ Prognostic step for the momentum.
 
     Parameters
@@ -109,7 +109,7 @@ def prog_velocity(uold, unow, mtg, dtdx, dthetadt=None, nx=nx):
 
 
 # for one rank
-def prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx, dthetadt=None, nx=nx):
+def prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx, dthetadt=None, nx=_nx):
     """ Prognostic step for the hydrometeors.
 
     Parameters
@@ -184,7 +184,7 @@ def prog_moisture(unow, qvold, qcold, qrold, qvnow, qcnow, qrnow, dtdx, dthetadt
     return qvnew, qcnew, qrnew
 
 
-def prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx, dthetadt=None, nx=nx):
+def prog_numdens(unow, ncold, nrold, ncnow, nrnow, dtdx, dthetadt=None, nx=_nx):
     """ Prognostic step for the number densities.
 
     Parameters
