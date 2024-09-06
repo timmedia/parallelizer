@@ -11,7 +11,7 @@ and all subfunctions.
 # Output control
 # -------------------------------------------------
 out_fname = "output_test"  # file name of output
-iout = 1  # write every iout-th time-step into the output file
+iout = 360  # write every iout-th time-step into the output file
 iiniout = 1  # write initial field (0 = no, 1 = yes)
 # Domain size
 #hoi2   zggvgzvgzvgz
@@ -23,7 +23,7 @@ thl = 150.0  # domain depth  [K]
 nz = 60  # vertical resolution
 dt = 10  # time step [s]
 diff = 0.02  # (horizontal) diffusion coefficient
-time = dt  # integration time [s]
+time = dt*20  # integration time [s]
 
 
 # Topography
@@ -50,7 +50,7 @@ u00_sh = 10.0  # initial velocity below shear layer [m/s] (ishear = 1)
 # -------------------------------------------------
 nab = 30  # number of grid points in absorber
 diffabs = 1.0  # maximum value of absorber
-irelax = 1  # lateral boundaries (0 = periodic, 1 = relax)
+irelax = 0  # lateral boundaries (0 = periodic, 1 = relax)
 
 nb = 2  # number of boundary points on each side
 

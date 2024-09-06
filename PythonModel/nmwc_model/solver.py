@@ -80,23 +80,55 @@ from nmwc_model.namelist import (
 #import mpi4py
 from mpi4py import MPI
 
-def exchange_borders(data, tag: int):
+def exchange_borders(data, nb_p, tag: int):
     """Exchange broders with next rank for 2-dimensional data set `data`. (scattered along first axis)"""
     left_rank = (rank - 1) % rank_size
     right_rank = (rank + 1) % rank_size
-
-    send_to_right = data[-2*nb:-nb]
-    send_to_left = data[nb:2*nb]
-
-    new_left_border = np.empty(nb)
-    new_right_border = np.empty(nb)
+    if rank == 0:
+        send_to_left = data[nb_p:2*nb_p]
+        new_left_border = np.empty((nb_p, data.shape[1]), dtype=data.dtype)
+        send_to_right = data[-2*(nb_p-1):-(nb_p-1)]
+        new_right_border = np.empty((nb_p-1, data.shape[1]), dtype=data.dtype)
+    elif rank == rank_size-1:
+        send_to_left = data[nb_p:2*nb_p]
+        new_left_border = np.empty((nb_p, data.shape[1]), dtype=data.dtype)
+        send_to_right = data[-2*(nb_p+1):-(nb_p+1)]
+        new_right_border = np.empty((nb_p+1, data.shape[1]), dtype=data.dtype)
+    else:
+        send_to_left = data[nb_p:2*nb_p]
+        new_left_border = np.empty((nb_p, data.shape[1]), dtype=data.dtype)
+        send_to_right = data[-2*nb_p:-nb_p]
+        new_right_border = np.empty((nb_p, data.shape[1]), dtype=data.dtype)
 
     comm.Sendrecv(sendbuf=send_to_left, dest=left_rank, sendtag=rank * 10_000 + 100 * left_rank +
-                  tag, recvbuf=new_right_border, source=left_rank, recvtag=left_rank * 10_000 + 100 * rank + tag)
+                  tag, recvbuf=new_right_border, source=right_rank, recvtag=right_rank * 10_000 + 100 * rank + tag)
 
     comm.Sendrecv(sendbuf=send_to_right, dest=right_rank, sendtag=rank * 10_000 + 100 * right_rank +
-                  tag, recvbuf=new_left_border, source=left_rank, recvtag=right_rank * 10_000 + 100 * rank + tag)
-    
+                  tag, recvbuf=new_left_border, source=left_rank, recvtag=left_rank * 10_000 + 100 * rank + tag)
+    if rank == 0:
+        data[:nb_p, :] = new_left_border[:, :]
+        data[-(nb_p-1):, :] = new_right_border[:, :]
+    elif rank == rank_size-1:
+        data[:nb_p, :] = new_left_border[:, :]
+        data[-(nb_p+1):, :] = new_right_border[:, :]
+    else:
+        data[:nb_p, :] = new_left_border[:, :]
+        data[-nb_p:, :] = new_right_border[:, :]
+
+def rank_0_sendrecieves_right(data, nb_p, tag: int):
+    right_rank = 1
+    send_to_right = data[-2*(nb_p-1):-(nb_p-1)]
+    new_right_border = np.empty((nb_p-1, data.shape[1]), dtype=data.dtype)
+    data[-(nb_p - 1):, :] = comm.Sendrecv(sendbuf=send_to_right, dest=right_rank, sendtag=rank * 10_000 + 100 * right_rank +
+    tag, recvbuf=new_right_border, source=right_rank, recvtag=right_rank * 10_000 + 100 * rank + tag) 
+
+def last_rank_sendrecieves_left(data, nb_p, tag: int):
+    left_rank = 1
+    send_to_left = data[nb_p:2*nb_p]
+    new_left_border = np.empty((nb_p, data.shape[1]), dtype=data.dtype)
+    data[:nb_p, :] = comm.Sendrecv(sendbuf=send_to_left, dest=left_rank, sendtag=rank * 10_000 + 100 * left_rank +
+    tag, recvbuf=new_left_border, source=left_rank, recvtag=left_rank * 10_000 + 100 * rank + tag)  
+
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 rank_size = comm.Get_size()
@@ -819,17 +851,22 @@ if __name__ == "__main__":
         # print("snow: ", snow[5,5])
         # print("snew: ", snew[5,5])
         # print()
-
         # exchange boundaries if periodic
         # -------------------------------------------------------------------------
         if irelax == 0:
-            snew = periodic(snew, nx_p, nb_p)
-            unew = periodic(unew, nx_p, nb_p)
+            snew = exchange_borders(snew, nb_p, tag=2)
+            print(snew,"hoi")
+            # snew = periodic(snew, nx_p, nb_p)
+            unew = exchange_borders(unew, nb_p, tag=4)
+            # unew = periodic(unew, nx_p, nb_p)
 
             if imoist == 1:
-                qvnew = periodic(qvnew, nx_p, nb_p)
-                qcnew = periodic(qcnew, nx_p, nb_p)
-                qrnew = periodic(qrnew, nx_p, nb_p)
+                qvnew = exchange_borders(qvnew, nb_p, tag=7)
+                qcnew = exchange_borders(qcnew, nb_p, tag=10)
+                qrnew = exchange_borders(qrnew, nb_p, tag=13)
+                # qvnew = periodic(qvnew, nx_p, nb_p)
+                # qcnew = periodic(qcnew, nx_p, nb_p)
+                # qrnew = periodic(qrnew, nx_p, nb_p)
 
             # 2-moment scheme
             if imoist == 1 and imicrophys == 2:
@@ -854,6 +891,33 @@ if __name__ == "__main__":
                 if imoist == 1 and imicrophys == 2:
                     ncnew = relax(ncnew, nx_p, nb_p, ncbnd1, ncbnd2, rank, rank_size)
                     nrnew = relax(nrnew, nx_p, nb_p, nrbnd1, nrbnd2, rank, rank_size)
+                if rank == 0:
+                    snew = rank_0_sendrecieves_right(snew,nb_p,tag=2)
+                    unew = rank_0_sendrecieves_right(unew,nb_p,tag=4)
+
+                    if imoist == 1:
+                        qvnew = rank_0_sendrecieves_right(qvnew,nb_p,tag=7)
+                        qcnew = rank_0_sendrecieves_right(qcnew,nb_p,tag=10)
+                        qrnew = rank_0_sendrecieves_right(qrnew,nb_p,tag=13)
+
+                if rank == rank_size-1:
+                    snew = last_rank_sendrecieves_left(snew,nb_p,tag=2)
+                    unew = last_rank_sendrecieves_left(unew,nb_p,tag=4)
+
+                    if imoist == 1:
+                        qvnew = last_rank_sendrecieves_left(qvnew,nb_p,tag=7)
+                        qcnew = last_rank_sendrecieves_left(qcnew,nb_p,tag=10)
+                        qrnew = last_rank_sendrecieves_left(qrnew,nb_p,tag=13)
+            else: 
+                snew = exchange_borders(snew, nb_p, tag = 2)
+                # snew = periodic(snew, nx_p, nb_p)
+                unew = exchange_borders(unew, nb_p, tag=4)
+                # unew = periodic(unew, nx_p, nb_p)
+
+                if imoist == 1:
+                    qvnew = exchange_borders(qvnew, nb_p, tag=7)
+                    qcnew = exchange_borders(qcnew, nb_p, tag=10)
+                    qrnew = exchange_borders(qrnew, nb_p, tag=13)
 
         # Diffusion and gravity wave absorber - alte position
         # ------------------------------------
@@ -880,7 +944,7 @@ if __name__ == "__main__":
         # *** Exercise 2.2 Diagnostic computation of pressure ***
         # *** Diagnostic computation of pressure ***
         #
-
+        print(snew)
         # *** edit here ***
         prs = diag_pressure(prs0, prs, snew)
         #
@@ -968,12 +1032,21 @@ if __name__ == "__main__":
                 # periodic lateral boundary conditions
                 # ----------------------------
                 if irelax == 0:
-                    dthetadt = periodic(dthetadt, nx_p, nb_p)
+                    dthetadt = exchange_borders(dthetadt, nb_p, tag=24)
+                    # dthetadt = periodic(dthetadt, nx_p, nb_p)
                 else:
                     # Relax latent heat fields
                     # ----------------------------
                     if (rank == 0) | (rank == rank_size-1):
                         dthetadt = relax(dthetadt, nx_p, nb_p, dthetadtbnd1, dthetadtbnd2, rank, rank_size)
+                        if rank == 0:
+                            dthetadt = rank_0_sendrecieves_right(dthetadt,nb_p,tag=24)
+
+                        if rank == rank_size-1:
+                            dthetadt = last_rank_sendrecieves_left(dthetadt,nb_p,tag=24)
+                    else: 
+                        dthetadt = exchange_borders(dthetadt, nb_p, tag = 24)
+
             else:
                 dthetadt = np.zeros((nxb_p, nz1))
 
@@ -1021,7 +1094,43 @@ if __name__ == "__main__":
                 nrold = nrnow
                 nrnow = nrnew
 
+        # Exchange borderpoints_n
+        # exchange_borders(sold, nb_p, 0)
+        # exchange_borders(snow, nb_p, 1)
+        # exchange_borders(snew, 2)
+
+        # exchange_borders(uold, nb_p, tag=3)
+        # exchange_borders(unow, nb_p, tag=4)
+
+        # exchange_borders(qvold, nb_p, tag=5)
+        # exchange_borders(qvnow, nb_p, tag=6)
+        # # exchange_borders(qvnew, nb_p, tag=7)
+
+        # exchange_borders(qcold, nb_p, tag=8)
+        # exchange_borders(qcnow, nb_p, tag=9)
+        # # exchange_borders(qcnew, nb_p, tag=10)
+
+        # exchange_borders(qrold, nb_p, tag=11)
+        # exchange_borders(qrnow, nb_p, tag=12)
+        # # exchange_borders(qrnew, nb_p, tag=13)
+
+        # if imoist == 1 and imicrophys == 2:
+        #     exchange_borders(ncold, nb_p, tag=14)
+        #     exchange_borders(ncnow, nb_p, tag=15)
+        #     # exchange_borders(ncnew, nb_p, tag=16)
+
+        #     exchange_borders(nrold, nb_p, tag=17)
+        #     exchange_borders(nrnow, nb_p, tag=18)
+        #     # exchange_borders(nrnew, nb_p, tag=19)
+
+        # exchange_borders(mtg, nb_p, tag=20)
+        # exchange_borders(prs, nb_p, tag=21)
+        # exchange_borders(zhtold, nb_p, tag=22)
+        # exchange_borders(zhtnow, nb_p, tag=23)
+        # exchange_borders(dthetadt, nb_p, tag=24)
+
         ### apply horizontal diffusion
+        
         if imoist == 0:
             [unew, snew] = horizontal_diffusion(tau, unew, snew)
         else:
