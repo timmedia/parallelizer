@@ -13,7 +13,7 @@ from nmwc_model.namelist import (
 )  # global variables
 
 
-def prog_isendens(sold, snow, unow, dtdx, dthetadt=None, nx=_nx):
+def prog_isendens(sold, snow, unow, dtdx, dthetadt, nx_p):
     """ Prognostic step for the isentropic mass density.
 
     Parameters
@@ -46,7 +46,7 @@ def prog_isendens(sold, snow, unow, dtdx, dthetadt=None, nx=_nx):
     # *** edit here ***
     #
     k = np.arange(1, nz - 1)
-    i = nb + np.arange(0, nx)
+    i = nb + np.arange(0, nx_p)
 
     snew[i, :] = sold[i, :] - dtdx*(snow[i+1, :]*0.5*(
         unow[i+1, :] + unow[i+2, :]) - snow[i-1, :]*0.5*(unow[i-1, :] + unow[i, :]))
@@ -60,7 +60,7 @@ def prog_isendens(sold, snow, unow, dtdx, dthetadt=None, nx=_nx):
     return snew
 
 
-def prog_velocity(uold, unow, mtg, dtdx, dthetadt=None, nx=_nx):
+def prog_velocity(uold, unow, mtg, dtdx, dthetadt, nx_p):
     """ Prognostic step for the momentum.
 
     Parameters
@@ -92,7 +92,7 @@ def prog_velocity(uold, unow, mtg, dtdx, dthetadt=None, nx=_nx):
     # *** time step for momentum ***
     # *** edit here ***
     #
-    i = nb + np.arange(0, nx + 1)
+    i = nb + np.arange(0, nx_p + 1)
     k = np.arange(1, nz-1)
 
     unew[i, :] = uold[i, :] - unow[i, :]*dtdx * \
