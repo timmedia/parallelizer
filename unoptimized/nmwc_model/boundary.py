@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+rank_size = comm.Get_size()
 
 
 def periodic(phi, nx, nb):
@@ -79,14 +84,20 @@ def relax(phi, nx, nb, phi1, phi2):
     rel = np.array([1, 0.99, 0.95, 0.8, 0.5, 0.2, 0.05, 0.01])
 
     # relaxation boundary conditions
-    if len(phi.shape) == 2:  # Marina: phi.ndim == 2
-        for i in range(0, nr):
-            phi[i, :] = phi1 * rel[i] + phi[i, :] * (1 - rel[i])
-            phi[n - 1 - i, :] = phi2 * rel[i] + phi[n - 1 - i, :] * (1 - rel[i])
-    else:
-        for i in range(0, nr):
-            phi[i] = phi1 * rel[i] + phi[i] * (1 - rel[i])
-            phi[n - 1 - i] = phi2 * rel[i] + phi[n - 1 - i] * (1 - rel[i])
+    if rank == 0:
+        if len(phi.shape) == 2:
+            for i in range(0, nr):
+                phi[i, :] = phi1 * rel[i] + phi[i, :] * (1 - rel[i])
+        else:
+            for i in range(0, nr):
+                phi[i] = phi1 * rel[i] + phi[i] * (1 - rel[i])
+    elif rank == rank_size - 1 :
+        if len(phi.shape) == 2:
+            for i in range(0, nr):
+                phi[n - 1 - i, :] = phi2 * rel[i] + phi[n - 1 - i, :] * (1 - rel[i])
+        else:
+            for i in range(0, nr):
+                phi[n - 1 - i] = phi2 * rel[i] + phi[n - 1 - i] * (1 - rel[i])
 
     return phi
 
