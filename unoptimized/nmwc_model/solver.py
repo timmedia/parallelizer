@@ -460,7 +460,9 @@ def initialize_gathered_variables(nout: int):
         prec_g, PREC_g, tot_prec_g, TOT_PREC_g,
         topo_g, zhtold_g, zhtnow_g, Z_g, th0_g,
         dthetadtbnd1_g, dthetadtbnd2_g,
-        exn_g
+        exn_g, qvbnd1_g, qvbnd2_g, qcbnd1_g, qcbnd2_g, qrbnd1_g, qrbnd2_g,
+        ncbnd1_g, ncbnd2_g, nrbnd1_g, nrbnd2_g, sbnd1_g, sbnd2_g, ubnd1_g, ubnd2_g,
+        its_out_g
     )
     # endregion
 
@@ -502,16 +504,32 @@ def main():
     nrnow_p = np.empty_like(nrold_p)
     nrnew_p = np.empty_like(nrold_p)
     mtg_p = np.empty((nx_p + 2 * nb_n, nz_n))
-    tau_p = np.empty(nz_n)
-    prs0_p = np.zeros(nz_n + 1)
+    tau_p = np.empty((nz_n))
+    prs0_p = np.zeros((nz_n + 1))
     prs_p = np.empty((nx_p + 2 * nb_n, nz1_n))
     topo_p = np.empty((nx_p + 2 * nb_n, 1))
     zhtold_p = np.empty((nx_p + 2 * nb_n, nz1_n))
     zhtnow_p = np.empty((nx_p + 2 * nb_n, nz1_n))
     th0_p = np.empty((nz_n + 1))
-    tot_prec_p = np.empty(nx_p + 2 * nb_n)
+    tot_prec_p = np.empty((nx_p + 2 * nb_n))
     prec_p = np.empty(nx_p + 2 * nb_n)
     exn_p = np.empty((nx_p + 2 * nb_n, nz1_n))
+
+    if rank_p == rank_size - 1:
+        qvbnd1_p = np.empty(nz_n)
+        qvbnd2_p = np.empty(nz_n)
+        qcbnd1_p = np.empty(nz_n)
+        qcbnd2_p = np.empty(nz_n)
+        qrbnd1_p = np.empty(nz_n)
+        qrbnd2_p = np.empty(nz_n)
+        ncbnd1_p = np.empty(nz_n)
+        ncbnd2_p = np.empty(nz_n)
+        nrbnd1_p = np.empty(nz_n)
+        nrbnd2_p = np.empty(nz_n)
+        sbnd1_p = np.empty(nz_n)
+        sbnd2_p = np.empty(nz_n)
+        ubnd1_p = np.empty(nz_n)
+        ubnd2_p = np.empty(nz_n)
 
     # Define variable names of main process for ease of use
     sold_g, snow_g, snew_g, S_g = None, None, None, None
@@ -526,6 +544,10 @@ def main():
     prec_g, PREC_g, tot_prec_g, TOT_PREC_g = None, None, None, None
     topo_g, zhtold_g, zhtnow_g, Z_g, th0_g = None, None, None, None, None
     dthetadtbnd1_g, dthetadtbnd2_g = None, None
+    exn_g = None
+    qvbnd1_g, qvbnd2_g, qcbnd1_g, qcbnd2_g, qrbnd1_g, qrbnd2_g  = None, None, None, None, None, None
+    ncbnd1_g, ncbnd2_g, nrbnd1_g, nrbnd2_g, sbnd1_g, sbnd2_g, ubnd1_g, ubnd2_g = None, None, None, None, None, None, None, None
+    its_out_g = None
     # endregion
 
     if rank_p == 0:
@@ -541,7 +563,11 @@ def main():
             dthetadt_g, DTHETADT_g,
             mtg_g, tau_g, prs0_g, prs_g, T_g,
             prec_g, PREC_g, tot_prec_g, TOT_PREC_g,
-            topo_g, zhtold_g, zhtnow_g, Z_g, th0_g, dthetadtbnd1_g, dthetadtbnd2_g, exn_g
+            topo_g, zhtold_g, zhtnow_g, Z_g, th0_g, 
+            dthetadtbnd1_g, dthetadtbnd2_g, 
+            exn_g, qvbnd1_g, qvbnd2_g, qcbnd1_g, qcbnd2_g, qrbnd1_g, qrbnd2_g,
+            ncbnd1_g, ncbnd2_g, nrbnd1_g, nrbnd2_g, sbnd1_g, sbnd2_g, ubnd1_g, ubnd2_g,
+            its_out_g
         ) = initialize_gathered_variables(nout)
 
         # For each process, send relevant slices
@@ -592,6 +618,21 @@ def main():
             comm.Send(tot_prec_g[rank_slice], dest=i, tag=i * 1000 + 28)
             comm.Send(prec_g[rank_slice], dest=i, tag=i * 1000 + 29)
             comm.Send(exn_p[rank_slice], dest=i, tag=i * 1000 + 30)
+        
+        comm.Send(qvbnd1_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 31)
+        comm.Send(qvbnd2_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 32)
+        comm.Send(qcbnd1_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 33)
+        comm.Send(qcbnd2_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 34)
+        comm.Send(qrbnd1_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 35)
+        comm.Send(qrbnd2_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 36)
+        comm.Send(ncbnd1_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 37)
+        comm.Send(ncbnd2_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 38)
+        comm.Send(nrbnd1_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 39)
+        comm.Send(nrbnd2_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 40)
+        comm.Send(sbnd1_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 41)
+        comm.Send(sbnd2_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 42)
+        comm.Send(ubnd1_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 43)
+        comm.Send(ubnd2_g, dest=rank_size - 1, tag=(rank_size - 1) * 1000 + 44)
         # endregion
 
         # region Set process variables for process with rank 0
@@ -639,6 +680,20 @@ def main():
         tot_prec_p = tot_prec_g[rank_slice]
         prec_p = prec_g[rank_slice]
         exn_p = exn_g[rank_slice]
+        qvbnd1_p = qvbnd1_g
+        qvbnd2_p = qvbnd2_g
+        qcbnd1_p = qcbnd1_g
+        qcbnd2_p = qcbnd2_g
+        qrbnd1_p = qrbnd1_g
+        qrbnd2_p = qrbnd2_g
+        ncbnd1_p = ncbnd1_g
+        ncbnd2_p = ncbnd2_g
+        nrbnd1_p = nrbnd1_g
+        nrbnd2_p = nrbnd2_g
+        sbnd1_p = sbnd1_g
+        sbnd2_p = sbnd2_g
+        ubnd1_p = ubnd1_g
+        ubnd2_p = ubnd2_g
         # endregion
     else:
         # region Receive process-specific variable values
@@ -682,6 +737,23 @@ def main():
         comm.Recv(tot_prec_p, source=0, tag=rank_p * 1000 + 28)
         comm.Recv(prec_p, source=0, tag=rank_p * 1000 + 29)
         comm.Recv(exn_p, source=0, tag=rank_p * 1000 + 30)
+
+        if rank_p == rank_size - 1:
+            comm.Recv(qvbnd1_p, source=0, tag=rank_p * 1000 + 31)
+            comm.Recv(qvbnd2_p, source=0, tag=rank_p * 1000 + 32)
+            comm.Recv(qcbnd1_p, source=0, tag=rank_p * 1000 + 33)
+            comm.Recv(qcbnd2_p, source=0, tag=rank_p * 1000 + 34)
+            comm.Recv(qrbnd1_p, source=0, tag=rank_p * 1000 + 35)
+            comm.Recv(qrbnd2_p, source=0, tag=rank_p * 1000 + 36)
+            comm.Recv(ncbnd1_p, source=0, tag=rank_p * 1000 + 37)
+            comm.Recv(ncbnd2_p, source=0, tag=rank_p * 1000 + 38)
+            comm.Recv(nrbnd1_p, source=0, tag=rank_p * 1000 + 39)
+            comm.Recv(nrbnd2_p, source=0, tag=rank_p * 1000 + 40)
+            comm.Recv(sbnd1_p, source=0, tag=rank_p * 1000 + 41)
+            comm.Recv(sbnd2_p, source=0, tag=rank_p * 1000 + 42)
+            comm.Recv(ubnd1_p, source=0, tag=rank_p * 1000 + 43)
+            comm.Recv(ubnd2_p, source=0, tag=rank_p * 1000 + 44)
+
         # endregion
 
     # region Loop over all time steps
@@ -718,7 +790,7 @@ def main():
 
         # region Time step for isentropic mass density
         snew_p = prog_isendens(sold_p, snow_p, unow_p,
-                               dtdx_p, dthetadt=dthetadt_p, nx=nx_p)
+                               dtdx_p, dthetadt=dthetadt_p, nx_p=nx_p)
         # endregion
 
         # region Time step for moisture scalars
@@ -735,54 +807,24 @@ def main():
 
         # region Time step for momentum
         unew_p = prog_velocity(uold_p, unow_p, mtg_p,
-                               dtdx_p, dthetadt=dthetadt_p, nx=nx_p)
-        # endregion
-
-        # region Exchange boundaries if periodic
-        # if irelax_n == 0:
-        #     if rank_p == 0:
-        #         # TODO: fix, this is incorrect syntax
-        #         snew_p[0:nb_n, :] = comm.Sendrecv(sendbuf=snew_p[nb_n:2*nb_n, :], dest=rank_size - 1,
-        #                                           sendt_nag=11, recvbuf=None, source=rank_size - 1, recvtag=22)
-        #         unew_p[0:nb_n, :] = comm.Sendrecv(sendbuf=unew_p[nb_n:2*nb_n, :], dest=rank_size - 1,
-        #                                           sendt_nag=111, recvbuf=None, source=rank_size - 1, recvtag=222)
-        #     elif rank_p == rank_size - 1:
-        #         # TODO: fix, this is incorrect syntax
-        #         snew_p[-nb_n:, :] = comm.Sendrecv(sendbuf=snew_p[-2*nb_n:-nb_n],
-        #                                           dest=0, sendt_nag=22, recvbuf=None, source=0, recvtag=11)
-        #         unew_p[-nb_n:, :] = comm.Sendrecv(sendbuf=unew_p[-2*nb_n:-nb_n],
-        #                                           dest=0, sendt_nag=222, recvbuf=None, source=0, recvtag=111)
-
-        #     if imoist_n == 1:
-        #         pass
-        #         qvnew_p = periodic(qvnew_p, nx_n, nb_n)  # TODO
-        #         # qcnew_p = periodic(qcnew, nx_n, nb_n) # TODO
-        #         # qrnew_p = periodic(qrnew, nx_n, nb_n) # TODO
-
-        #     # 2-moment scheme
-        #     if imoist_n == 1 and imicrophys_n == 2:
-        #         pass
-        #         # ncnew = periodic(ncnew, nx_n, nb_n) # TODO
-        #         # nrnew = periodic(nrnew, nx_n, nb_n) # TODO
+                               dtdx_p, dthetadt_p, nx_p)
         # endregion
 
         # region Relaxation of prognostic fields
         if irelax_n == 1:
             if idbg_n == 1:
                 print("Relaxing prognostic fields ...\n")
-            # snew = relax(snew, nx_n, nb_n, sbnd1, sbnd2) # TODO
-            # unew = relax(unew, nx_n + 1, nb_n, ubnd1, ubnd2) # TODO
+            snew = relax(snew, nx_p, nb_n, sbnd1_p, sbnd2_p)
+            unew = relax(unew, nx_p + 1, nb_n, ubnd1_p, ubnd2_p)
             if imoist_n == 1:
-                pass
-                # qvnew = relax(qvnew, nx_n, nb_n, qvbnd1, qvbnd2) # TODO
-                # qcnew = relax(qcnew, nx_n, nb_n, qcbnd1, qcbnd2) # TODO
-                # qrnew = relax(qrnew, nx_n, nb_n, qrbnd1, qrbnd2) # TODO
+                qvnew = relax(qvnew, nx_p, nb_n, qvbnd1_p, qvbnd2_p)
+                qcnew = relax(qcnew, nx_p, nb_n, qcbnd1_p, qcbnd2_p)
+                qrnew = relax(qrnew, nx_p, nb_n, qrbnd1_p, qrbnd2_p)
 
             # 2-moment scheme
             if imoist_n == 1 and imicrophys_n == 2:
-                pass
-                # ncnew = relax(ncnew, nx_n, nb_n, ncbnd1, ncbnd2) # TODO
-                # nrnew = relax(nrnew, nx_n, nb_n, nrbnd1, nrbnd2) # TODO
+                ncnew = relax(ncnew, nx_p, nb_n, ncbnd1_p, ncbnd2_p)
+                nrnew = relax(nrnew, nx_p, nb_n, nrbnd1_p, nrbnd2_p)
         # endregion
 
         # region Diffusion and gravity wave absorber
@@ -881,12 +923,12 @@ def main():
             print("Preparing next time step ...\n")
 
         # region Exchange borders
-        zhtnow_p = exchange_borders_2d(zhtnow_p, 101)
+        # zhtnow_p = exchange_borders_2d(zhtnow_p, 101)
         unew_p = exchange_borders_2d(unew_p, 102)
         snew_p = exchange_borders_2d(snew_p, 103)
-        mtg_p = exchange_borders_2d(mtg_p, 104)
-        exn_p = exchange_borders_2d(exn_p, 105)
-        prs_p = exchange_borders_2d(prs_p, 106)
+        # mtg_p = exchange_borders_2d(mtg_p, 104)
+        # exn_p = exchange_borders_2d(exn_p, 105)
+        # prs_p = exchange_borders_2d(prs_p, 106)
         qvnew_p = exchange_borders_2d(qvnew_p, 107)
         qcnew_p = exchange_borders_2d(qcnew_p, 108)
         qrnew_p = exchange_borders_2d(qrnew_p, 109)
