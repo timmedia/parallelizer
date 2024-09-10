@@ -857,7 +857,8 @@ def main():
                     qcnew=qcnew_p,
                     qrnew=qrnew_p,
                     ncnew=ncnew_p,
-                    nrnew=nrnew_p, nx=nx_p
+                    nrnew=nrnew_p, 
+                    nx=nx_p
                 )
             else:
                 unew_p, snew_p, qvnew_p, qcnew_p, qrnew_p = horizontal_diffusion(
