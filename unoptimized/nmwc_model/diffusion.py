@@ -3,17 +3,17 @@ import numpy as np
 from nmwc_model.namelist import (
     idbg,
     nb,
-    nx,
     imoist_diff,
     imoist,
     imicrophys,
     irelax,
 )  # import global variables
 from nmwc_model.boundary import periodic
+from nmwc_model.parallel import exchange_borders_2d
 
 
 def horizontal_diffusion(
-    tau, unew, snew, qvnew=None, qcnew=None, qrnew=None, ncnew=None, nrnew=None, nx=nx
+    tau, unew, snew, qvnew=None, qcnew=None, qrnew=None, ncnew=None, nrnew=None, nx=None
 ):
     """ Horizontal diffusion.
 
@@ -122,17 +122,17 @@ def horizontal_diffusion(
 
     # exchange periodic boundaries
     if irelax == 0:
-        unew = periodic(unew, nx, nb)
-        snew = periodic(snew, nx, nb)
+        unew = exchange_borders_2d(unew, 500)
+        snew = exchange_borders_2d(snew, 501)
 
         if imoist == 1 and imoist_diff == 1:
-            qvnew = periodic(qvnew, nx, nb)
-            qcnew = periodic(qcnew, nx, nb)
-            qrnew = periodic(qrnew, nx, nb)
+            qvnew = exchange_borders_2d(qvnew, 502)
+            qcnew = exchange_borders_2d(qcnew, 503)
+            qrnew = exchange_borders_2d(qrnew, 504)
 
             if imicrophys == 2:
-                ncnew = periodic(ncnew, nx, nb)
-                nrnew = periodic(nrnew, nx, nb)
+                ncnew = exchange_borders_2d(ncnew, 505)
+                nrnew = exchange_borders_2d(nrnew, 506)
 
     if imoist == 0:
         return unew, snew
