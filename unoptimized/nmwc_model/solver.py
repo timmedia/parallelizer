@@ -827,6 +827,22 @@ def main():
                 nrnew = relax(nrnew, nx_p, nb_n, nrbnd1_p, nrbnd2_p)
         # endregion
 
+        # region Exchange borders
+        # zhtnow_p = exchange_borders_2d(zhtnow_p, 101)
+        unew_p = exchange_borders_2d(unew_p, 100002)
+        snew_p = exchange_borders_2d(snew_p, 100003)
+        # mtg_p = exchange_borders_2d(mtg_p, 104)
+        # exn_p = exchange_borders_2d(exn_p, 105)
+        # prs_p = exchange_borders_2d(prs_p, 106)
+        qvnew_p = exchange_borders_2d(qvnew_p, 100007)
+        qcnew_p = exchange_borders_2d(qcnew_p, 100008)
+        qrnew_p = exchange_borders_2d(qrnew_p, 100009)
+
+        if imoist_n == 1 and imicrophys_n == 2:
+            ncnew_p = exchange_borders_2d(ncnew_p, tag=100010)
+            nrnew_p = exchange_borders_2d(nrnew_p, tag=100011)
+        # endregion
+
         # region Diffusion and gravity wave absorber
         if imoist_n == 0:
             unew_p, snew_p = horizontal_diffusion(
