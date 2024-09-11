@@ -1,4 +1,4 @@
-from nmwc_model.namelist import nb, irelax
+from nmwc_model_optimized.namelist import nb, irelax
 import numpy as np
 from mpi4py import MPI
 
