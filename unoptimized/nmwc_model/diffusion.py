@@ -121,6 +121,7 @@ def horizontal_diffusion(
                 ) * sel[i, :] + ncnew[i, :] * ~sel[i, :]
 
     # exchange periodic boundaries
+    # TODO are these necessary?
     if irelax == 0:
         unew = exchange_borders_2d(unew, 500)
         snew = exchange_borders_2d(snew, 501)
