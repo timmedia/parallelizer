@@ -938,18 +938,6 @@ def main():
         if idbg_n == 1:
             print("Preparing next time step ...\n")
 
-        # region Exchange borders
-        unew_p = exchange_borders_2d(unew_p, 100002)
-        snew_p = exchange_borders_2d(snew_p, 100003)
-        qvnew_p = exchange_borders_2d(qvnew_p, 100007)
-        qcnew_p = exchange_borders_2d(qcnew_p, 100008)
-        qrnew_p = exchange_borders_2d(qrnew_p, 100009)
-
-        if imoist_n == 1 and imicrophys_n == 2:
-            ncnew_p = exchange_borders_2d(ncnew_p, tag=100010)
-            nrnew_p = exchange_borders_2d(nrnew_p, tag=100011)
-        # endregion
-
         # region Exchange isentropic mass density and velocity
         if imicrophys_n == 2:
             ncold_p = ncnow_p
