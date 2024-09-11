@@ -47,11 +47,22 @@ def maketopo(topo, nxb):
         print("Topography ...\n")
 
     x = np.arange(0, nxb, dtype=np.float64)
-
     x0 = (nxb - 1) / 2.0 + 1
     x = (x + 1 - x0) * dx
-    toponf = topomx * np.exp(-(x / float(topowd)) ** 2)
 
+    topomx2, topomx3, topomx4 = 1000, 500, 500
+    x0_2, x0_3, x0_4 = -900000, 0, 1400000
+    print(x0_4)
+    # Calculate Gaussian functions
+    toponf1 = topomx * np.exp(-(x / float(topowd)) ** 2)
+    toponf2 = topomx2 * np.exp(-((x - x0_2) / float(topowd) / 2) ** 2)
+    toponf3 = topomx3 * np.exp(-((x - x0_3) / float(topowd)) ** 2)
+    toponf4 = topomx4 * np.exp(-((x - x0_4) / float(topowd) / 2.5) ** 2)
+
+    # Combine Gaussian terms
+    toponf = toponf1 + toponf2 + toponf3 + toponf4
+
+    # Calculate final topography profile
     topo[1:-1, 0] = toponf[1:-1] + 0.25 * (
         toponf[0:-2] - 2.0 * toponf[1:-1] + toponf[2:]
     )

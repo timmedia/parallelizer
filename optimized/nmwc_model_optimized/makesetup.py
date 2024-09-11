@@ -2,8 +2,8 @@
 import numpy as np
 import sys
 
-from nmwc_model.meteo_utilities import rrmixv1
-from nmwc_model.namelist import (
+from nmwc_model_optimized.meteo_utilities import rrmixv1
+from nmwc_model_optimized.namelist import (
     bv00,
     cp,
     cpdr,
@@ -63,7 +63,6 @@ def maketopo(topo, nxb):
     toponf = toponf1 + toponf2 + toponf3 + toponf4
 
     # Calculate final topography profile
-    # topo = np.zeros((nxb, 1))
     topo[1:-1, 0] = toponf[1:-1] + 0.25 * (
         toponf[0:-2] - 2.0 * toponf[1:-1] + toponf[2:]
     )

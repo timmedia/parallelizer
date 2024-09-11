@@ -114,13 +114,4 @@ def readsim(filename, varnames):
     var.theta = np.zeros(shape=var.zp.shape[-2:])
     var.theta[:, :] = theta1d[:, np.newaxis]
 
-
-
-
-    # calculate theta levels
-    var.dth = var.thl / var.nz
-    theta1d = np.arange(var.nz) * var.dth + var.th00 + var.dth / 2.0
-    var.theta = np.zeros(shape=var.zp.shape[-2:])
-    var.theta[:, :] = theta1d[:, np.newaxis]
-
     return var

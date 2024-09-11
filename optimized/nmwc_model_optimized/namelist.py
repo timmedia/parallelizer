@@ -10,7 +10,7 @@ and all subfunctions.
 
 # Output control
 # -------------------------------------------------
-out_fname = "output"  # file name of output
+out_fname = "output_optimized"  # file name of output
 iout = 360  # write every iout-th time-step into the output file
 iiniout = 1  # write initial field (0 = no, 1 = yes)
 
@@ -22,8 +22,8 @@ dx = xl / nx  # horizontal resolution [m]
 thl = 350.0  # domain depth  [K]
 nz = 60  # vertical resolution
 dt = 2  # time step [s]
-diff = 0.02  # (horizontal) diffusion coefficient
-time = 6 * 60 * 60  # integration time [s]
+diff = 0.05  # (horizontal) diffusion coefficient
+time = 2 * 60 * 60  # integration time [s]
 
 # Topography
 # -------------------------------------------------
@@ -56,8 +56,8 @@ nb = 2  # number of boundary points on each side
 # Print options
 # -------------------------------------------------
 idbg = 0  # print debugging text (0 = not print, 1 = print)
-iprtcfl = 1  # print Courant number (0 = not print, 1 = print)
-itime = 1  # print computation time (0 = not print, 1 = print)
+iprtcfl = 0  # print Courant number (0 = not print, 1 = print)
+itime = 0  # print computation time (0 = not print, 1 = print)
 
 # Physics: Moisture
 # -------------------------------------------------

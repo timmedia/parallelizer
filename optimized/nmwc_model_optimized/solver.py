@@ -28,28 +28,31 @@ TODO:
  -----------------------------------------------------------
 
 """
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np  # Scientific computing with Python
 from time import time as tm  # Benchmarking tools
 import sys
 
 # import model functions
-from nmwc_model.makesetup import maketopo, makeprofile
-from nmwc_model.boundary import periodic, relax
-from nmwc_model.parallel import exchange_borders_2d, gather_1d, gather_2d
-from nmwc_model.prognostics import (
+from nmwc_model_optimized.makesetup import maketopo, makeprofile
+from nmwc_model_optimized.boundary import periodic, relax
+from nmwc_model_optimized.parallel import exchange_borders_2d, gather_1d, gather_2d
+from nmwc_model_optimized.prognostics import (
     prog_isendens,
     prog_velocity,
     prog_moisture,
     prog_numdens,
 )
-from nmwc_model.diagnostics import diag_montgomery, diag_pressure, diag_height
-from nmwc_model.diffusion import horizontal_diffusion
-from nmwc_model.output import makeoutput, write_output
-from nmwc_model.microphysics import kessler, seifert
+from nmwc_model_optimized.diagnostics import diag_montgomery, diag_pressure, diag_height
+from nmwc_model_optimized.diffusion import horizontal_diffusion
+from nmwc_model_optimized.output import makeoutput, write_output
+from nmwc_model_optimized.microphysics import kessler, seifert
 
 # import global namelist variables
-from nmwc_model.namelist import (
+from nmwc_model_optimized.namelist import (
     imoist as imoist_n,
     imicrophys as imicrophys_n,
     irelax as irelax_n,
@@ -482,7 +485,7 @@ def main():
         nout += 1
     # endregion
 
-    # region Allocate process-specific variables
+    # region Declare process-specific variables
     sold_p = np.empty((nx_p + 2 * nb_n, nz_n))
     snow_p = np.empty_like(sold_p)
     snew_p = np.empty_like(sold_p)
@@ -828,12 +831,8 @@ def main():
         # endregion
 
         # region Exchange borders
-        # zhtnow_p = exchange_borders_2d(zhtnow_p, 101)
         unew_p = exchange_borders_2d(unew_p, 100002)
         snew_p = exchange_borders_2d(snew_p, 100003)
-        # mtg_p = exchange_borders_2d(mtg_p, 104)
-        # exn_p = exchange_borders_2d(exn_p, 105)
-        # prs_p = exchange_borders_2d(prs_p, 106)
         qvnew_p = exchange_borders_2d(qvnew_p, 100007)
         qcnew_p = exchange_borders_2d(qcnew_p, 100008)
         qrnew_p = exchange_borders_2d(qrnew_p, 100009)
@@ -940,12 +939,8 @@ def main():
             print("Preparing next time step ...\n")
 
         # region Exchange borders
-        # zhtnow_p = exchange_borders_2d(zhtnow_p, 101)
         unew_p = exchange_borders_2d(unew_p, 100002)
         snew_p = exchange_borders_2d(snew_p, 100003)
-        # mtg_p = exchange_borders_2d(mtg_p, 104)
-        # exn_p = exchange_borders_2d(exn_p, 105)
-        # prs_p = exchange_borders_2d(prs_p, 106)
         qvnew_p = exchange_borders_2d(qvnew_p, 100007)
         qcnew_p = exchange_borders_2d(qcnew_p, 100008)
         qrnew_p = exchange_borders_2d(qrnew_p, 100009)
@@ -1164,7 +1159,6 @@ def main():
     # endregion
 
     # region Write output
-    # TODO: gather
     print("Start wrtiting output.\n")
     if rank_p == 0:
         if imoist_n == 0:

@@ -3,7 +3,7 @@ import numpy as np
 
 # # python-netcdf4 is not supportet by some linux distors
 # from netCDF4 import Dataset
-from nmwc_model.namelist import (
+from nmwc_model_optimized.namelist import (
     idbg,
     nb,
     nx,

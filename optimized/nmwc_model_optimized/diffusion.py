@@ -1,6 +1,6 @@
 import numpy as np
 
-from nmwc_model.namelist import (
+from nmwc_model_optimized.namelist import (
     idbg,
     nb,
     imoist_diff,
@@ -8,8 +8,8 @@ from nmwc_model.namelist import (
     imicrophys,
     irelax,
 )  # import global variables
-from nmwc_model.boundary import periodic
-from nmwc_model.parallel import exchange_borders_2d
+from nmwc_model_optimized.boundary import periodic
+from nmwc_model_optimized.parallel import exchange_borders_2d
 
 
 def horizontal_diffusion(
