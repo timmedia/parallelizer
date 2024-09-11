@@ -49,7 +49,7 @@ u00_sh = 10.0  # initial velocity below shear layer [m/s] (ishear = 1)
 # -------------------------------------------------
 nab = 30  # number of grid points in absorber
 diffabs = 1.0  # maximum value of absorber
-irelax = 1  # lateral boundaries (0 = periodic, 1 = relax)
+irelax = 0  # lateral boundaries (0 = periodic, 1 = relax)
 
 nb = 2  # number of boundary points on each side
 
