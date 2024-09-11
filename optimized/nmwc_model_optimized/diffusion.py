@@ -9,7 +9,6 @@ from nmwc_model_optimized.namelist import (
     irelax,
 )  # import global variables
 from nmwc_model_optimized.boundary import periodic
-from nmwc_model_optimized.parallel import exchange_borders_2d
 
 
 def horizontal_diffusion(
@@ -119,21 +118,6 @@ def horizontal_diffusion(
                     * (ncnew[i - 1, :] - 2.0 * ncnew[i, :] + ncnew[i + 1, :])
                     / 4.0
                 ) * sel[i, :] + ncnew[i, :] * ~sel[i, :]
-
-    # exchange periodic boundaries
-    # TODO are these necessary?
-    if irelax == 0:
-        unew = exchange_borders_2d(unew, 500)
-        snew = exchange_borders_2d(snew, 501)
-
-        if imoist == 1 and imoist_diff == 1:
-            qvnew = exchange_borders_2d(qvnew, 502)
-            qcnew = exchange_borders_2d(qcnew, 503)
-            qrnew = exchange_borders_2d(qrnew, 504)
-
-            if imicrophys == 2:
-                ncnew = exchange_borders_2d(ncnew, 505)
-                nrnew = exchange_borders_2d(nrnew, 506)
 
     if imoist == 0:
         return unew, snew
