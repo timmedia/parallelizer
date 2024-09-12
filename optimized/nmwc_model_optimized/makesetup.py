@@ -52,7 +52,6 @@ def maketopo(topo, nxb):
 
     topomx2, topomx3, topomx4 = 1000, 500, 500
     x0_2, x0_3, x0_4 = -900000, 0, 1400000
-    print(x0_4)
     # Calculate Gaussian functions
     toponf1 = topomx * np.exp(-(x / float(topowd)) ** 2)
     toponf2 = topomx2 * np.exp(-((x - x0_2) / float(topowd) / 2) ** 2)
