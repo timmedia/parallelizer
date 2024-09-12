@@ -470,7 +470,7 @@ def initialize_gathered_variables(nout: int):
     # endregion
 
 
-def main():
+def run_optimized():
     # region Setup
     # Print the full precision
     np.set_printoptions(threshold=sys.maxsize)
@@ -1212,6 +1212,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    run_optimized()
 
 # END OF SOLVER.PY

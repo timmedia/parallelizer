@@ -58,7 +58,7 @@ from nmwc_model.namelist import (
     nts,
     dt,
     iiniout,
-    nout,
+    nout as _nout,
     iout,
     dx,
     nx,
@@ -78,12 +78,13 @@ from nmwc_model.namelist import (
 )
 
 
-if __name__ == "__main__":
+def run_unoptimized():
     # Print the full precision
     # DL: REMOVE FOR STUDENT VERSION
     np.set_printoptions(threshold=sys.maxsize)
 
     # increase number of output steps by 1 for initial profile
+    nout = _nout
     if iiniout == 1:
         nout += 1
 
@@ -959,5 +960,8 @@ if __name__ == "__main__":
 
     if itime == 1:
         print("Total elapsed computation time: %g s\n" % (t1 - t0))
+
+if __name__ == "__main__":
+    run_unoptimized()
 
 # END OF SOLVER.PY
