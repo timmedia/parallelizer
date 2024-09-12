@@ -1142,13 +1142,13 @@ def main():
         print("\nEnd of time loop ...\n")
 
     tt = tm()
-    print("Elapsed computation time without writing: %g s\n" % (tt - t0_p))
+    print("Elapsed computation time on rank %g without writing: %g s\n" % (rank_p, tt - t0_p))
 
     # endregion
 
     # region Write output
-    print("Start wrtiting output.\n")
     if rank_p == 0:
+        print("Start wrtiting output.\n")
         if imoist_n == 0:
             write_output(nout, Z_g, U_g, S_g, T_g)
         elif imicrophys_n == 0 or imicrophys_n == 1:
