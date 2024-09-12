@@ -26,7 +26,7 @@ def read_file(fname):
 
 
 setup(
-    name="nmwc_model",
+    name="nmwc_model_optimized",
     version="0.1.0",
     author="ETH Zurich",
     author_email="subbiali@phys.ethz.ch",

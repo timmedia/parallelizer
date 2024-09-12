@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from nmwc_model import prognostics
+from nmwc_model_optimized import prognostics
 
 from tests import utils
 

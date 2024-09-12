@@ -2,7 +2,7 @@ import numpy as np
 from mpi4py import MPI
 from time import sleep
 
-from nmwc_model.parallel import exchange_borders_2d
+from nmwc_model_optimized.parallel import exchange_borders_2d
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()

@@ -16,7 +16,7 @@ modules = [
 
 for module in modules:
     try:
-        exec("from nmwc_model import {}".format(module))
+        exec("from nmwc_model_optimized import {}".format(module))
     except (ImportError, ModuleNotFoundError):
         print("Installation failed: the module {}.py cannot be imported.".format(module))
         exit(0)

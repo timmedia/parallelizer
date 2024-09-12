@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from nmwc_model.boundary import periodic, relax
+from nmwc_model_optimized.boundary import periodic, relax
 
 from tests import utils
 

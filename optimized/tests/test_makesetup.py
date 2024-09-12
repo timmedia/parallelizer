@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from nmwc_model import makesetup
+from nmwc_model_optimized import makesetup
 
 from tests import utils
 

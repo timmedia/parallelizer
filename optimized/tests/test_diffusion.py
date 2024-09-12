@@ -3,7 +3,7 @@ from copy import deepcopy
 import numpy as np
 import pytest
 
-from nmwc_model import diffusion
+from nmwc_model_optimized import diffusion
 
 from tests import utils
 
