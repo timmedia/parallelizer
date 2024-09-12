@@ -1,6 +1,7 @@
 from nmwc_model_optimized.namelist import nb, irelax
 import numpy as np
 from mpi4py import MPI
+from typing import Union
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -45,7 +46,7 @@ def exchange_borders_2d(data_p: np.ndarray, tag: int):
     return data_p
 
 
-def gather_1d(data_p: np.ndarray, data_g: np.ndarray | None, nx_p: int, s: slice):
+def gather_1d(data_p: np.ndarray, data_g: Union[np.ndarray, None], nx_p: int, s: slice):
     """ Gather a one-dimensional dataset onto the process with rank 0.
 
     Parameters
@@ -80,7 +81,7 @@ def gather_1d(data_p: np.ndarray, data_g: np.ndarray | None, nx_p: int, s: slice
     return data_g
 
 
-def gather_2d(data_p: np.ndarray, data_g: np.ndarray | None, nx_p: int, s: slice):
+def gather_2d(data_p: np.ndarray, data_g: Union[np.ndarray, None], nx_p: int, s: slice):
     """ Gather a two-dimensional dataset onto the process with rank 0.
 
     Parameters
