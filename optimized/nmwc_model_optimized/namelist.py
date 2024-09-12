@@ -17,7 +17,7 @@ iiniout = 1  # write initial field (0 = no, 1 = yes)
 # Domain size
 # -------------------------------------------------
 xl = 5_000_000.0  # domain size  [m]
-nx = 5000  # number of grid points in horizontal direction
+nx = 5040  # number of grid points in horizontal direction
 dx = xl / nx  # horizontal resolution [m]
 thl = 350.0  # domain depth  [K]
 nz = 60  # vertical resolution
