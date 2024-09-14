@@ -1,6 +1,6 @@
 # Parallelization of an Isentropic model with mpi4py
 
-This repository contains all relevant files for the parallelization project conducted during the spring term of 2024 for the High Performance Computing for Weather and Climate course at ETH Zurich. In particular, you will find the following relevant files:
+This repository contains all relevant files for the parallelization project conducted during the spring term of 2024 for the «High Performance Computing for Weather and Climate» course at ETH Zurich. In particular, you will find the following relevant files:
 
 - The final report can be read by opening [report-isentropic-model.pdf](report-isentropic-model.pdf).
 
