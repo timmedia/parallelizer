@@ -14,7 +14,7 @@ This repository contains all relevant files for the parallelization project cond
 
 Furthermore, you will find the following Jupyter notebooks:
 
-- [profiling.ipynb](profiling.ipynb) was used to profile the unpotimized model.
+- [profiling.ipynb](profiling.ipynb) was used to profile the unoptimized model.
 
 - [run-models.ipynb](run-models.ipynb) allows you to run both the optimized and unoptimized models. Warning: If you want to execute the optimized model on your local machine, you might encounter an error;  please use the `mpirun` CLI instead. The printed computation times were used to create the files inside [measurements/](measurements/).
 
