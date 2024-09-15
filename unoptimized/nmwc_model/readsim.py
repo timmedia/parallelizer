@@ -74,7 +74,6 @@ def readsim(filename, varnames):
     if "specific_rain_water_content" in varnames:
         varnames.remove("accumulated_precipitation")
 
-    # convert
     var.dx = var.dx / 1000.0
     var.topomx = var.topomx / 1000.0
     var.topowd = var.topowd / 1000.0
@@ -88,12 +87,27 @@ def readsim(filename, varnames):
     x = np.arange(var.nx, dtype="float32")
     x0 = (var.nx - 1) / 2.0 + 1
     x = (x + 1 - x0) * var.dx
-    toponf = var.topomx * np.exp(-(x / float(var.topowd)) ** 2)
-    var.topo[1:-1] = toponf[1:-1] + 0.25 * (
-        toponf[0:-2] - 2.0 * toponf[1:-1] + toponf[2:]
-    )
 
-    # calculate theta levels
+    # Define Gaussian parameters in the same units as var.dx
+    topomx2, topomx3, topomx4 = 1000 / 1000.0, 500 / 1000.0, 500 / 1000.0
+    x0_2, x0_3, x0_4 = -900000 / 1000, 0 / 1000, 1400000 / 1000  # Positions relative to center (in meters)
+
+    # Calculate Gaussian functions
+    toponf1 = var.topomx * np.exp(-(x / float(var.topowd)) ** 2)
+    toponf2 = topomx2 * np.exp(-((x - x0_2) / float(var.topowd) / 2) ** 2)
+    toponf3 = topomx3 * np.exp(-((x - x0_3) / float(var.topowd)) ** 2)
+    toponf4 = topomx4 * np.exp(-((x - x0_4) / float(var.topowd) / 2.5) ** 2)
+    toponf = toponf1 + toponf2 + toponf3 + toponf4
+
+    # Calculate the final topography profile
+    if var.nx > 2:
+        var.topo[1:-1] = toponf[1:-1] + 0.25 * (
+            toponf[0:-2] - 2.0 * toponf[1:-1] + toponf[2:]
+        )
+    else:
+        var.topo[:] = toponf[:]
+
+    # Calculate theta levels
     var.dth = var.thl / var.nz
     theta1d = np.arange(var.nz) * var.dth + var.th00 + var.dth / 2.0
     var.theta = np.zeros(shape=var.zp.shape[-2:])
